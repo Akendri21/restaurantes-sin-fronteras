@@ -2,6 +2,14 @@
 :root{--bg:#f6f8fb;--card:#fff;--accent:#0ea5a4;--text:#0f172a;--muted:#6b7280}
 *{box-sizing:border-box;font-family:Inter, system-ui, Arial, sans-serif}
 body{margin:0;background:var(--bg);color:var(--text)}
+/* Default: hide page content until auth is allowed by JavaScript to avoid flash */
+html:not(.auth-allowed) .container,
+html:not(.auth-allowed) .topbar,
+html:not(.auth-allowed) .footer,
+html:not(.auth-allowed) .nav,
+html:not(.auth-allowed) .card{
+	opacity:0.02;pointer-events:none;user-select:none
+}
 /* Hide content while auth check is happening to prevent flash */
 .auth-checking body, .auth-checking .container, .auth-checking .topbar{opacity:0.01;pointer-events:none}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:linear-gradient(90deg,#0f172a,#0ea5a4);color:#fff;gap:12px}

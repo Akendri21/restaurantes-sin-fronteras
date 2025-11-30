@@ -88,6 +88,9 @@ function logout(){
   localStorage.removeItem('rsf_token');
   updateUserBadge();
   applyPermissions();
+  // Remove page access and redirect to login
+  document.documentElement.classList.remove('auth-allowed');
+  window.location.href = 'login.html';
 }
 function currentUser(){
   // Try API-based user stored in session/localstorage
@@ -147,7 +150,7 @@ async function apiGetMe(){
 async function requireAuth(){
   // Do not force on login page
   const currentPath = window.location.pathname.split('/').pop();
-  if(currentPath === 'login.html' || currentPath === '') return;
+  if(currentPath === 'login.html' || currentPath === 'login') return;
   if(USE_API){
     const token = localStorage.getItem('rsf_token');
     if(!token){ window.location.href = 'login.html'; return; }
@@ -171,6 +174,10 @@ async function requireAdmin(){
 }
 function applyPermissions(){
   const role = currentRole();
+  // Hide most of the nav items if not logged in
+  const isLogged = !!currentUser();
+  document.querySelectorAll('.nav a').forEach(a=>{ if(a.getAttribute('data-i18n') === 'login') { a.style.display = isLogged ? 'none' : 'inline-block'; } else { a.style.display = isLogged ? 'inline-block' : 'none'; } });
+  // Admin-only elements
   document.querySelectorAll('[data-admin-only]').forEach(el=>el.style.display = (role==='admin')?'inline-block':'none');
   // Elements marked with data-no-delete-for-staff are treated as admin-only (hide for staff/viewers)
   document.querySelectorAll('[data-no-delete-for-staff]').forEach(el=>{ if(role==='admin'){ el.style.display = 'inline-block'; el.disabled = false; } else { el.style.display = 'none'; el.disabled = true; } });
@@ -179,9 +186,9 @@ function applyPermissions(){
 }
 
 document.addEventListener('DOMContentLoaded', async ()=>{
-  document.documentElement.classList.add('auth-checking');
   renderLogo(); applyLang(); await probeApi(); if(USE_API){ await apiGetMe().catch(()=>{}); } updateUserBadge(); applyPermissions(); await requireAuth();
-  document.documentElement.classList.remove('auth-checking');
+  // If we've passed requireAuth, mark the page as allowed
+  document.documentElement.classList.add('auth-allowed');
 });
 
 /* Mobile menu toggle */
