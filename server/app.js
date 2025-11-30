@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Low, JSONFile } = require('lowdb');
@@ -39,10 +40,35 @@ async function initDB() {
 }
 
 // Middleware
-app.use(cors());
+// Allow credentials so the browser can receive HttpOnly cookies
+app.use(cors({ origin: true, credentials: true }));
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, '..'))); // serve project root
+// Middleware to protect static assets and redirect to login if unauthenticated
+app.use((req, res, next) => {
+  try {
+    // Public paths: API endpoints and login page resources + assets
+    if (req.path.startsWith('/api') || req.path.startsWith('/assets') || req.path === '/login.html' || req.path === '/favicon.ico' || req.path.startsWith('/assets/') || req.path.startsWith('/.well-known')) {
+      return next();
+    }
+    // Check cookie or Authorization header
+    const authHeader = req.headers.authorization;
+    const headerToken = authHeader && authHeader.split(' ')[1];
+    const cookieToken = req.cookies && req.cookies['rsf_token'];
+    if (!headerToken && !cookieToken) {
+      return res.redirect('/login.html');
+    }
+    // Validate token
+    const token = headerToken || cookieToken;
+    jwt.verify(token, JWT_SECRET);
+    return next();
+  } catch (err) {
+    return res.redirect('/login.html');
+  }
+});
+
+app.use(express.static(path.join(__dirname, '..'))); // serve project root (after guard)
 
 // Auth helpers
 function createToken(user) {
@@ -63,11 +89,12 @@ async function getUserFromToken(token) {
 }
 
 function requireAuth(req, res, next) {
-  const auth = req.headers.authorization;
-  const token = auth && auth.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'Not authenticated' });
-
   try {
+    const auth = req.headers.authorization;
+    const headerToken = auth && auth.split(' ')[1];
+    const cookieToken = req.cookies && req.cookies['rsf_token'];
+    const token = headerToken || cookieToken;
+    if (!token) return res.status(401).json({ error: 'Not authenticated' });
     const payload = jwt.verify(token, JWT_SECRET);
     req.user = payload;
     next();
@@ -97,6 +124,8 @@ app.post('/api/auth/login', async (req, res) => {
   if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 
   const token = createToken(user);
+  // set HttpOnly cookie so static files and server middleware can accept auth
+  res.cookie('rsf_token', token, { httpOnly: true, sameSite: 'lax' });
   res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
 });
 
@@ -113,6 +142,7 @@ app.post('/api/auth/register', async (req, res) => {
   await db.write();
 
   const token = createToken(newUser);
+  res.cookie('rsf_token', token, { httpOnly: true, sameSite: 'lax' });
   res.json({ token, user: { id: newUser.id, username: newUser.username, role: newUser.role } });
 });
 
@@ -121,6 +151,11 @@ app.get('/api/auth/me', requireAuth, async (req, res) => {
   const user = db.data.users.find(u => u.id === req.user.id);
   if (!user) return res.status(404).json({ error: 'User not found' });
   res.json({ id: user.id, username: user.username, role: user.role });
+});
+
+app.post('/api/auth/logout', requireAuth, (req, res) => {
+  res.clearCookie('rsf_token');
+  res.json({ ok: true });
 });
 
 // Admin users management

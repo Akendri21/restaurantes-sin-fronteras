@@ -88,9 +88,8 @@ function logout(){
   localStorage.removeItem('rsf_token');
   updateUserBadge();
   applyPermissions();
-  // Remove page access and redirect to login
-  document.documentElement.classList.remove('auth-allowed');
-  window.location.href = 'login.html';
+  // Ask API to clear cookies if used, then redirect
+  (async ()=>{ if(USE_API){ try{ await fetch(API_BASE + '/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch(e){} } document.documentElement.classList.remove('auth-allowed'); window.location.href = 'login.html'; })();
 }
 function currentUser(){
   // Try API-based user stored in session/localstorage
@@ -121,6 +120,7 @@ async function apiRequest(path, opts = {}){
   const token = localStorage.getItem('rsf_token');
   if (token) headers['Authorization'] = 'Bearer ' + token;
   opts.headers = headers;
+  opts.credentials = 'include';
   const res = await fetch(API_BASE + path, opts);
   if (!res.ok) {
     const err = await res.json().catch(()=>({ error: 'request failed' }));
@@ -152,8 +152,7 @@ async function requireAuth(){
   const currentPath = window.location.pathname.split('/').pop();
   if(currentPath === 'login.html' || currentPath === 'login') return;
   if(USE_API){
-    const token = localStorage.getItem('rsf_token');
-    if(!token){ window.location.href = 'login.html'; return; }
+    // When using API, the auth may be present as an HttpOnly cookie; try to fetch /api/auth/me
     const me = await apiGetMe();
     if(!me){ window.location.href = 'login.html'; return; }
     // OK
