@@ -1,1 +1,65 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>RSF - Usuarios</title>
+    <link rel="stylesheet" href="assets/style.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo" id="logo-container"></div>
+        <h1 data-i18n="brand">RESTAURANTES SIN FRONTERAS</h1>
+      </div>
+      <button id="menu-btn" class="menu-btn" aria-label="Menú" title="Menú">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <nav class="nav" id="main-nav">
+        <a href="index.html" data-i18n="nav_dashboard">Dashboard</a>
+        <a href="restaurantes.html" data-i18n="nav_restaurants">Restaurantes</a>
+        <a href="menus.html" data-i18n="nav_menus">Menús</a>
+        <a href="facturacion.html" data-i18n="nav_billing">Facturación</a>
+        <a href="reportes.html" data-i18n="nav_reports">Reportes</a>
+        <a href="opiniones.html" data-i18n="nav_opinions">Opiniones</a>
+        <a href="login.html" data-i18n="login">Login</a>
+        <a href="users.html" data-admin-only>Usuarios</a>
+      </nav>
+      <div class="controls">
+        <select id="lang-select" onchange="setLang(this.value)"><option value="es">ES</option><option value="en">EN</option></select>
+        <button id="login-btn" onclick="showLogin()" data-i18n="login">Login</button>
+        <span id="user-badge" class="user-badge hidden"></span>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="card">
+        <h2>Administrar Usuarios</h2>
+
+        <div class="card">
+          <h3>Nuevo Usuario (Admin)</h3>
+          <label>Usuario:<input id="adm-username"/></label>
+          <label>Contraseña:<input id="adm-password" type="password"/></label>
+          <label>Rol:<select id="adm-role"><option value="admin">Admin</option><option value="staff">Staff</option><option value="viewer">Viewer</option></select></label>
+          <button onclick="adminCreateUser()" data-admin-only>Crear Usuario</button>
+        </div>
+
+        <div class="card">
+          <h3>Lista de Usuarios</h3>
+          <table>
+            <thead><tr><th>Usuario</th><th>Rol</th><th>Acciones</th></tr></thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">© <span id="year"></span> RESTAURANTES SIN FRONTERAS - RSF.</footer>
+
+    <script src="assets/app.js"></script>
+    <script src="assets/users.js"></script>
+  </body>
+  </html>
 <!doctype html><html lang="es"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>RSF - Usuarios</title><link rel="stylesheet" href="assets/style.css"></head><body><header class="topbar"><div class="brand"><div class="logo" id="logo-container"></div><h1 data-i18n="brand">RESTAURANTES SIN FRONTERAS</h1></div><button id="menu-btn" class="menu-btn" aria-label="Menú" title="Menú"><span></span><span></span><span></span></button><nav class="nav" id="main-nav"><a href="index.html" data-i18n="nav_dashboard">Dashboard</a><a href="restaurantes.html" data-i18n="nav_restaurants">Restaurantes</a><a href="menus.html" data-i18n="nav_menus">Menús</a><a href="facturacion.html" data-i18n="nav_billing">Facturación</a><a href="reportes.html" data-i18n="nav_reports">Reportes</a><a href="opiniones.html" data-i18n="nav_opinions">Opiniones</a><a href="login.html" data-i18n="login">Login</a><a href="users.html" data-admin-only>Usuarios</a></nav><div class="controls"><select id="lang-select" onchange="setLang(this.value)"><option value="es">ES</option><option value="en">EN</option></select><button id="login-btn" onclick="showLogin()" data-i18n="login">Login</button><span id="user-badge" class="user-badge hidden"></span></div></header><main class="container"><section class="card"><h2>Administrar Usuarios</h2><div class="card"><h3>Nuevo Usuario (Admin)</h3><label>Usuario:<input id="adm-username"/></label><label>Contraseña:<input id="adm-password" type="password"/></label><label>Rol:<select id="adm-role"><option value="admin">Admin</option><option value="staff">Staff</option><option value="viewer">Viewer</option></select></label><button onclick="adminCreateUser()" data-admin-only>Crear Usuario</button></div><div class="card"><h3>Lista de Usuarios</h3><table><thead><tr><th>Usuario</th><th>Rol</th><th>Acciones</th></tr></thead><tbody id="users-tbody"></tbody></table></div></section></main><footer class="footer">© <span id="year"></span> RESTAURANTES SIN FRONTERAS - RSF.</footer><script src="assets/app.js"></script><script>function renderUsers(){ const users = getUsers(); const tbody = document.getElementById('users-tbody'); tbody.innerHTML=''; users.forEach(u=>{ const tr = document.createElement('tr'); tr.innerHTML = `<td>${u.username}</td><td>${u.role}</td><td><button onclick="updateRole('${u.username}','staff')" data-admin-only>Promover a Staff</button> <button onclick="updateRole('${u.username}','admin')" data-admin-only>Promover a Admin</button> <button onclick="updateRole('${u.username}','viewer')" data-admin-only>Revertir a Usuario</button> <button onclick="removeUser('${u.username}')" data-admin-only>Eliminar</button></td>`; tbody.appendChild(tr); }); applyPermissions(); } function updateRole(username,role){ const resp = promoteUser(username,role); if(!resp.ok) return alert(resp.msg); renderUsers(); } function removeUser(username){ if(!confirm('Eliminar usuario?')) return; const resp = deleteUser(username); if(!resp.ok) return alert(resp.msg); renderUsers(); } function adminCreateUser(){ const u=document.getElementById('adm-username').value.trim(); const p=document.getElementById('adm-password').value; const role = document.getElementById('adm-role').value; const resp=createUserByAdmin(u,p,role); if(!resp.ok) return alert(resp.msg); document.getElementById('adm-username').value=''; document.getElementById('adm-password').value=''; renderUsers(); } document.addEventListener('DOMContentLoaded', ()=>{ renderUsers(); applyPermissions(); applyLang(); document.getElementById('year').textContent = new Date().getFullYear(); });</script></body></html>

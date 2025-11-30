@@ -67,12 +67,15 @@
 </div>
 <script src="assets/app.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', ()=>{
+document.addEventListener('DOMContentLoaded', async ()=>{
   document.getElementById('year').textContent = new Date().getFullYear();
-  applyLang(); renderLogo(); updateDashboard();
+  applyLang(); renderLogo(); await updateDashboard();
 });
-function updateDashboard(){
-  const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}');
+async function updateDashboard(){
+  let data;
+  if(typeof apiRequest === 'function' && (await probeApi())){
+    try{ data = { restaurants: await apiRequest('/api/restaurants'), invoices: [], opinions: [] }; } catch(err){ data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); }
+  } else { data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); }
   const restaurantsCount = (data.restaurants||[]).length;
   const opinionsCount = (data.opinions||[]).length;
   const sales = (data.invoices||[]).reduce((s,i)=>s+(i.total||0),0);

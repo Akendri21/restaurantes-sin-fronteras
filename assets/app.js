@@ -24,6 +24,18 @@ function initDataOnce(){
   return JSON.parse(localStorage.getItem(STORAGE_KEY));
 }
 
+// API configuration (server) - will detect if API is available
+const API_BASE = window.location.origin;
+let USE_API = false; // set to true if API ping success
+
+async function probeApi() {
+  try {
+    const r = await fetch(API_BASE + '/api/ping');
+    if (r.ok) { USE_API = true; return true; }
+  } catch (err) { /* ignore */ }
+  USE_API = false; return false;
+}
+
 let state = initDataOnce();
 
 function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
@@ -70,12 +82,24 @@ function loginAs(role, username){
   applyPermissions();
 }
 function logout(){
+  // Clear both local demo and API tokens
   sessionStorage.removeItem('rsf_user');
   sessionStorage.removeItem('rsf_role');
+  localStorage.removeItem('rsf_token');
   updateUserBadge();
   applyPermissions();
 }
-function currentUser(){ const raw = sessionStorage.getItem('rsf_user'); return raw && raw !== 'null' ? JSON.parse(raw) : null; }
+function currentUser(){
+  // Try API-based user stored in session/localstorage
+  const raw = sessionStorage.getItem('rsf_user');
+  if (raw && raw !== 'null') return JSON.parse(raw);
+  // legacy demo user
+  const token = localStorage.getItem('rsf_token');
+  // token is not parsed here - we rely on apiGetMe when needed
+  const legacy = localStorage.getItem('rsf_user');
+  if (legacy && legacy !== 'null') return JSON.parse(legacy);
+  return null;
+}
 function currentRole(){ const u = currentUser(); if(u && u.role) return u.role; return sessionStorage.getItem('rsf_role') || null; }
 function updateUserBadge(){
   const badge = document.getElementById('user-badge');
@@ -84,6 +108,65 @@ function updateUserBadge(){
   if(badge){
     if(user){ badge.classList.remove('hidden'); badge.textContent = `${user.username} (${user.role})`; if(btn){ btn.textContent = 'Salir'; btn.onclick = logout; } }
     else { badge.classList.add('hidden'); if(btn){ btn.textContent = translations[localStorage.getItem('rsf_lang')||'es'].login; btn.onclick = showLogin; } }
+  }
+}
+
+// API wrappers
+async function apiRequest(path, opts = {}){
+  if (!USE_API) throw new Error('API not available');
+  const headers = opts.headers || {};
+  const token = localStorage.getItem('rsf_token');
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  opts.headers = headers;
+  const res = await fetch(API_BASE + path, opts);
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({ error: 'request failed' }));
+    const e = new Error(err.error || 'API request failed'); e.status = res.status; e.body = err; throw e;
+  }
+  return res.json().catch(()=>null);
+}
+
+async function apiLogin(username, password){
+  const resp = await apiRequest('/api/auth/login', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username, password }) });
+  if (resp && resp.token) { localStorage.setItem('rsf_token', resp.token); sessionStorage.setItem('rsf_user', JSON.stringify(resp.user)); sessionStorage.setItem('rsf_role', resp.user.role); updateUserBadge(); applyPermissions(); }
+  return resp;
+}
+async function apiRegister(username, password){
+  const resp = await apiRequest('/api/auth/register', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username, password }) });
+  if (resp && resp.token) { localStorage.setItem('rsf_token', resp.token); sessionStorage.setItem('rsf_user', JSON.stringify(resp.user)); sessionStorage.setItem('rsf_role', resp.user.role); updateUserBadge(); applyPermissions(); }
+  return resp;
+}
+async function apiGetMe(){
+  try{
+    const r = await apiRequest('/api/auth/me');
+    if (r && r.username) { sessionStorage.setItem('rsf_user', JSON.stringify(r)); sessionStorage.setItem('rsf_role', r.role); updateUserBadge(); applyPermissions(); }
+    return r;
+  } catch (err) { return null; }
+}
+
+async function requireAuth(){
+  // Do not force on login page
+  const currentPath = window.location.pathname.split('/').pop();
+  if(currentPath === 'login.html' || currentPath === '') return;
+  if(USE_API){
+    const token = localStorage.getItem('rsf_token');
+    if(!token){ window.location.href = 'login.html'; return; }
+    const me = await apiGetMe();
+    if(!me){ window.location.href = 'login.html'; return; }
+    // OK
+  } else {
+    // fallback to local demo session
+    const user = currentUser();
+    if(!user){ window.location.href = 'login.html'; return; }
+  }
+}
+
+async function requireAdmin(){
+  if(USE_API){
+    const me = await apiGetMe().catch(()=>null);
+    if(!me || me.role !== 'admin'){ window.location.href = 'index.html'; }
+  } else {
+    if(currentRole() !== 'admin'){ window.location.href = 'index.html'; }
   }
 }
 function applyPermissions(){
@@ -95,7 +178,11 @@ function applyPermissions(){
   document.querySelectorAll('[data-readonly-for-viewer]').forEach(el=>{ if(role==='viewer'){ el.disabled = true; } else { el.disabled = false; } });
 }
 
-document.addEventListener('DOMContentLoaded', ()=>{ renderLogo(); applyLang(); updateUserBadge(); applyPermissions(); });
+document.addEventListener('DOMContentLoaded', async ()=>{
+  document.documentElement.classList.add('auth-checking');
+  renderLogo(); applyLang(); await probeApi(); if(USE_API){ await apiGetMe().catch(()=>{}); } updateUserBadge(); applyPermissions(); await requireAuth();
+  document.documentElement.classList.remove('auth-checking');
+});
 
 /* Mobile menu toggle */
 function initMobileMenu(){
@@ -158,10 +245,16 @@ function createUserByAdmin(username,password,role){ if(currentRole() !== 'admin'
 function loginUser(username,password){ const users = getUsers(); const u = users.find(x=>x.username.toLowerCase()===username.toLowerCase() && x.password===password); if(!u) return {ok:false,msg:'Credenciales inválidas'}; sessionStorage.setItem('rsf_user', JSON.stringify({username:u.username,role:u.role})); sessionStorage.setItem('rsf_role', u.role); updateUserBadge(); applyPermissions(); return {ok:true,msg:'Login ok', user:u}; }
 
 function quickLogin(role){
-  // Demo quick login uses the exact username for DUEÑO/EMPLEADO1 etc
-  const resp = loginUser(role, role);
-  if(resp.ok){ window.location.href = 'index.html'; }
-  else alert(resp.msg);
+  const passwordMap = { 'DUEÑO': 'DUEÑO123', 'EMPLEADO1': 'EMPLEADO1', 'EMPLEADO2': 'EMPLEADO2', 'user': 'user' };
+  const pass = passwordMap[role] || role;
+  (async ()=>{
+    if(USE_API) {
+      try{ const r = await apiLogin(role, pass); if(r && r.user) window.location.href = 'index.html'; else alert('Error: '+(r.error||'No hay respuesta')); } catch(err){ alert('Error: ' + (err.message || err)); }
+    } else {
+      const resp = loginUser(role, pass);
+      if(resp.ok){ window.location.href = 'index.html'; } else alert(resp.msg);
+    }
+  })();
 }
 
 // initialize sample users

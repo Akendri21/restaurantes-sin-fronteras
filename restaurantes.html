@@ -53,8 +53,9 @@
 <footer class="footer">© <span id="year"></span> RESTAURANTES SIN FRONTERAS - RSF. <span data-i18n="rights">Todos los derechos reservados.</span></footer>
 <script src="assets/app.js"></script>
 <script>
-function renderRestaurantsPage(){
-  const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}');
+async function renderRestaurantsPage(){
+  let data;
+  try{ if(typeof apiRequest === 'function' && (await probeApi())){ data = { restaurants: await apiRequest('/api/restaurants') }; } else data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); } catch(err){ data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); }
   const tbody = document.getElementById('restaurants-tbody');
   tbody.innerHTML = '';
   (data.restaurants||[]).forEach(r=>{
@@ -73,9 +74,15 @@ function renderRestaurantsPage(){
   });
 }
 function clearForm(){ ['r-id','r-name','r-country','r-city','r-cuisine','r-currency'].forEach(id=>document.getElementById(id).value=''); }
-function saveRestaurant(){ if(currentRole() === 'viewer'){ alert('No tienes permisos para crear o editar restaurantes'); return; } const id = document.getElementById('r-id').value || ('rsf-'+Date.now()); const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); const obj = { id, name:document.getElementById('r-name').value, country:document.getElementById('r-country').value, city:document.getElementById('r-city').value, cuisine:document.getElementById('r-cuisine').value, currency:document.getElementById('r-currency').value, menu:[] }; data.restaurants = data.restaurants||[]; const idx = data.restaurants.findIndex(x=>x.id===id); if(idx>=0){ obj.menu = data.restaurants[idx].menu||[]; data.restaurants[idx]=obj; } else data.restaurants.push(obj); localStorage.setItem('rsf_data_v2', JSON.stringify(data)); renderRestaurantsPage(); clearForm(); alert('Guardado'); }
+async function saveRestaurant(){ if(currentRole() === 'viewer'){ alert('No tienes permisos para crear o editar restaurantes'); return; } const id = document.getElementById('r-id').value || ('rsf-'+Date.now()); const obj = { id, name:document.getElementById('r-name').value, country:document.getElementById('r-country').value, city:document.getElementById('r-city').value, cuisine:document.getElementById('r-cuisine').value, currency:document.getElementById('r-currency').value, menu:[] };
+  if(typeof apiRequest === 'function' && (await probeApi())){
+    try{ if(document.getElementById('r-id').value){ await apiRequest('/api/restaurants/' + id, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(obj) }); } else { await apiRequest('/api/restaurants', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(obj) }); } renderRestaurantsPage(); clearForm(); alert('Guardado'); } catch(err){ alert('Error: '+(err.message||err)); }
+  } else {
+    const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}');
+    data.restaurants = data.restaurants||[]; const idx = data.restaurants.findIndex(x=>x.id===id); if(idx>=0){ obj.menu = data.restaurants[idx].menu||[]; data.restaurants[idx]=obj; } else data.restaurants.push(obj); localStorage.setItem('rsf_data_v2', JSON.stringify(data)); renderRestaurantsPage(); clearForm(); alert('Guardado'); }
+}
 function editRestaurant(id){ const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); const r = (data.restaurants||[]).find(x=>x.id===id); if(!r) return; document.getElementById('r-id').value=r.id; document.getElementById('r-name').value=r.name; document.getElementById('r-country').value=r.country; document.getElementById('r-city').value=r.city; document.getElementById('r-cuisine').value=r.cuisine; document.getElementById('r-currency').value=r.currency; }
-function deleteRestaurant(id){ if(currentRole() !== 'admin'){ alert('Solo el administrador puede eliminar restaurantes'); return; } if(!confirm('Eliminar restaurante?')) return; const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); data.restaurants = (data.restaurants||[]).filter(x=>x.id!==id); data.opinions = (data.opinions||[]).filter(o=>o.restaurantId!==id); data.invoices = (data.invoices||[]).filter(i=>i.restaurantId!==id); localStorage.setItem('rsf_data_v2', JSON.stringify(data)); renderRestaurantsPage(); }
-document.addEventListener('DOMContentLoaded', ()=>{ renderRestaurantsPage(); applyPermissions(); applyLang(); document.getElementById('year').textContent = new Date().getFullYear(); });
+async function deleteRestaurant(id){ if(currentRole() !== 'admin'){ alert('Solo el administrador puede eliminar restaurantes'); return; } if(!confirm('Eliminar restaurante?')) return; if(typeof apiRequest === 'function' && (await probeApi())){ try{ await apiRequest('/api/restaurants/' + id, { method: 'DELETE' }); renderRestaurantsPage(); } catch(err){ alert('Error: '+(err.message||err)); } } else { const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); data.restaurants = (data.restaurants||[]).filter(x=>x.id!==id); data.opinions = (data.opinions||[]).filter(o=>o.restaurantId!==id); data.invoices = (data.invoices||[]).filter(i=>i.restaurantId!==id); localStorage.setItem('rsf_data_v2', JSON.stringify(data)); renderRestaurantsPage(); } }
+document.addEventListener('DOMContentLoaded', async ()=>{ await requireAuth(); renderRestaurantsPage(); applyPermissions(); applyLang(); document.getElementById('year').textContent = new Date().getFullYear(); });
 </script>
 </body></html>

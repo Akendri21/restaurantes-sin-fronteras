@@ -1,0 +1,23 @@
+{
+  "name": "restaurantes-sin-fronteras-server",
+  "version": "1.0.0",
+  "description": "Minimal backend for restaurantes-sin-fronteras demo - Auth & CRUD API",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "lowdb": "^1.0.0",
+    "nanoid": "^4.0.0",
+    "jsonwebtoken": "^9.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  },
+  "author": "",
+  "license": "MIT"
+}
