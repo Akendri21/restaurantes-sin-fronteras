@@ -1,0 +1,56 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>RSF - Restaurantes</title><link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
+<link rel="shortcut icon" href="assets/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="assets/site.webmanifest">
+<link rel="stylesheet" href="assets/style.css"></head><body><header class="topbar">
+  <div class="brand">
+    <div class="logo" id="logo-container"></div>
+    <h1 data-i18n="brand">RESTAURANTES SIN FRONTERAS</h1>
+  </div>
+  <nav class="nav">
+    <a href="index.html" data-i18n="nav_dashboard">Dashboard</a>
+    <a href="restaurantes.html" data-i18n="nav_restaurants">Restaurantes</a>
+    <a href="menus.html" data-i18n="nav_menus">Menús</a>
+    <a href="facturacion.html" data-i18n="nav_billing">Facturación</a>
+    <a href="reportes.html" data-i18n="nav_reports">Reportes</a>
+    <a href="opiniones.html" data-i18n="nav_opinions">Opiniones</a>
+  </nav>
+  <div class="controls">
+    <select id="lang-select" onchange="setLang(this.value)"><option value="es">ES</option><option value="en">EN</option></select>
+    <button id="login-btn" onclick="showLogin()" data-i18n="login">Login</button>
+    <span id="user-badge" class="user-badge hidden"></span>
+  </div>
+</header>
+
+<main class="container">
+<section class="card">
+<h2>Restaurantes</h2>
+<div class="card">
+  <h3>Agregar / Editar</h3>
+  <input id="r-id" type="hidden"/>
+  <label>Nombre:<input id="r-name" data-readonly-for-viewer/></label>
+  <label>País:<input id="r-country" data-readonly-for-viewer/></label>
+  <label>Ciudad:<input id="r-city" data-readonly-for-viewer/></label>
+  <label>Cocina:<input id="r-cuisine" data-readonly-for-viewer/></label>
+  <label>Moneda:<input id="r-currency" data-readonly-for-viewer/></label>
+  <button onclick="saveRestaurant()" data-readonly-for-viewer>Guardar</button>
+  <button onclick="clearForm()" data-readonly-for-viewer>Nuevo</button>
+</div>
+<div class="card">
+  <h3>Lista</h3>
+  <table><thead><tr><th>Nombre</th><th>País</th><th>Ciudad</th><th>Cocina</th><th>Moneda</th><th>Acciones</th></tr></thead><tbody id="restaurants-tbody"></tbody></table>
+</div>
+</section>
+</main>
+<footer class="footer">© <span id="year"></span> RESTAURANTES SIN FRONTERAS - RSF. <span data-i18n="rights">Todos los derechos reservados.</span></footer>
+<script src="assets/app.js"></script>
+<script>
+function renderRestaurantsPage(){ const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); const tbody = document.getElementById('restaurants-tbody'); tbody.innerHTML=''; (data.restaurants||[]).forEach(r=>{ const tr = document.createElement('tr'); tr.innerHTML = `<td>${r.name}</td><td>${r.country}</td><td>${r.city}</td><td>${r.cuisine}</td><td>${r.currency}</td><td><button onclick="editRestaurant('${r.id}')">Editar</button> <button onclick="deleteRestaurant('${r.id}')" data-no-delete-for-staff>Eliminar</button></td>`; tbody.appendChild(tr); }); }
+function clearForm(){ ['r-id','r-name','r-country','r-city','r-cuisine','r-currency'].forEach(id=>document.getElementById(id).value=''); }
+function saveRestaurant(){ const id = document.getElementById('r-id').value || ('rsf-'+Date.now()); const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); const obj = { id, name:document.getElementById('r-name').value, country:document.getElementById('r-country').value, city:document.getElementById('r-city').value, cuisine:document.getElementById('r-cuisine').value, currency:document.getElementById('r-currency').value, menu:[] }; data.restaurants = data.restaurants||[]; const idx = data.restaurants.findIndex(x=>x.id===id); if(idx>=0){ obj.menu = data.restaurants[idx].menu||[]; data.restaurants[idx]=obj; } else data.restaurants.push(obj); localStorage.setItem('rsf_data_v2', JSON.stringify(data)); renderRestaurantsPage(); clearForm(); alert('Guardado'); }
+function editRestaurant(id){ const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); const r = (data.restaurants||[]).find(x=>x.id===id); if(!r) return; document.getElementById('r-id').value=r.id; document.getElementById('r-name').value=r.name; document.getElementById('r-country').value=r.country; document.getElementById('r-city').value=r.city; document.getElementById('r-cuisine').value=r.cuisine; document.getElementById('r-currency').value=r.currency; }
+function deleteRestaurant(id){ if(!confirm('Eliminar restaurante?')) return; const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); data.restaurants = (data.restaurants||[]).filter(x=>x.id!==id); data.opinions = (data.opinions||[]).filter(o=>o.restaurantId!==id); data.invoices = (data.invoices||[]).filter(i=>i.restaurantId!==id); localStorage.setItem('rsf_data_v2', JSON.stringify(data)); renderRestaurantsPage(); }
+document.addEventListener('DOMContentLoaded', ()=>{ renderRestaurantsPage(); applyPermissions(); applyLang(); document.getElementById('year').textContent = new Date().getFullYear(); });
+</script>
+</body></html>

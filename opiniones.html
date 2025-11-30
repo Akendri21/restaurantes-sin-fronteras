@@ -1,0 +1,51 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>RSF - Opiniones</title><link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
+<link rel="shortcut icon" href="assets/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="assets/site.webmanifest">
+<link rel="stylesheet" href="assets/style.css"></head><body><header class="topbar">
+  <div class="brand">
+    <div class="logo" id="logo-container"></div>
+    <h1 data-i18n="brand">RESTAURANTES SIN FRONTERAS</h1>
+  </div>
+  <nav class="nav">
+    <a href="index.html" data-i18n="nav_dashboard">Dashboard</a>
+    <a href="restaurantes.html" data-i18n="nav_restaurants">Restaurantes</a>
+    <a href="menus.html" data-i18n="nav_menus">Menús</a>
+    <a href="facturacion.html" data-i18n="nav_billing">Facturación</a>
+    <a href="reportes.html" data-i18n="nav_reports">Reportes</a>
+    <a href="opiniones.html" data-i18n="nav_opinions">Opiniones</a>
+  </nav>
+  <div class="controls">
+    <select id="lang-select" onchange="setLang(this.value)"><option value="es">ES</option><option value="en">EN</option></select>
+    <button id="login-btn" onclick="showLogin()" data-i18n="login">Login</button>
+    <span id="user-badge" class="user-badge hidden"></span>
+  </div>
+</header>
+
+<main class="container">
+<section class="card">
+<h2>Opiniones</h2>
+<div class="card">
+  <input id="o-id" type="hidden"/>
+  <label>Restaurante:<select id="op-rest-select"></select></label>
+  <label>Autor:<input id="o-author" data-readonly-for-viewer/></label>
+  <label>Comentario:<textarea id="o-text" data-readonly-for-viewer></textarea></label>
+  <label>Calificación (1-5):<input id="o-rating" type="number" min="1" max="5" data-readonly-for-viewer/></label>
+  <button onclick="saveOpinion()" data-readonly-for-viewer>Guardar</button><button onclick="clearOpinionForm()" data-readonly-for-viewer>Nuevo</button>
+</div>
+<div class="card"><h3>Opiniones</h3><table><thead><tr><th>Restaurante</th><th>Autor</th><th>Comentario</th><th>Rating</th><th>Acciones</th></tr></thead><tbody id="opinions-tbody"></tbody></table></div>
+</section>
+</main>
+<footer class="footer">© <span id="year"></span> RESTAURANTES SIN FRONTERAS - RSF. <span data-i18n="rights">Todos los derechos reservados.</span></footer>
+<script src="assets/app.js"></script>
+<script>
+function populateOpRest(){ const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); const sel = document.getElementById('op-rest-select'); sel.innerHTML=''; (data.restaurants||[]).forEach(r=>{ const o = document.createElement('option'); o.value=r.id; o.textContent = r.name+' — '+r.city; sel.appendChild(o); }); renderOpinions(); }
+function saveOpinion(){ const id = document.getElementById('o-id').value || ('op-'+Date.now()); const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); const obj = { id, restaurantId:document.getElementById('op-rest-select').value, author:document.getElementById('o-author').value, text:document.getElementById('o-text').value, rating:parseInt(document.getElementById('o-rating').value)||0, date:new Date().toISOString() }; data.opinions = data.opinions||[]; const idx = data.opinions.findIndex(x=>x.id===id); if(idx>=0) data.opinions[idx]=obj; else data.opinions.push(obj); localStorage.setItem('rsf_data_v2', JSON.stringify(data)); clearOpinionForm(); renderOpinions(); }
+function renderOpinions(){ const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); const tbody = document.getElementById('opinions-tbody'); tbody.innerHTML=''; (data.opinions||[]).slice().reverse().forEach(o=>{ const r = (data.restaurants||[]).find(x=>x.id===o.restaurantId); const tr = document.createElement('tr'); tr.innerHTML = `<td>${r? r.name: 'N/D'}</td><td>${o.author}</td><td>${o.text}</td><td>${o.rating}</td><td><button onclick="editOpinion('${o.id}')">Editar</button> <button onclick="deleteOpinion('${o.id}')" data-no-delete-for-staff>Eliminar</button></td>`; tbody.appendChild(tr); }); }
+function clearOpinionForm(){ ['o-id','o-author','o-text','o-rating'].forEach(id=>document.getElementById(id).value=''); }
+function editOpinion(id){ const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); const o = (data.opinions||[]).find(x=>x.id===id); if(!o) return; document.getElementById('o-id').value=o.id; document.getElementById('op-rest-select').value=o.restaurantId; document.getElementById('o-author').value=o.author; document.getElementById('o-text').value=o.text; document.getElementById('o-rating').value=o.rating; }
+function deleteOpinion(id){ if(!confirm('Eliminar opinión?')) return; const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); data.opinions = data.opinions||[]; data.opinions = data.opinions.filter(x=>x.id!==id); localStorage.setItem('rsf_data_v2', JSON.stringify(data)); renderOpinions(); }
+document.addEventListener('DOMContentLoaded', ()=>{ populateOpRest(); applyPermissions(); applyLang(); document.getElementById('year').textContent = new Date().getFullYear(); });
+</script>
+</body></html>

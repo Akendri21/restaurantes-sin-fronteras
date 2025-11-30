@@ -1,0 +1,43 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>RSF - Reportes</title><link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
+<link rel="shortcut icon" href="assets/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="assets/site.webmanifest">
+<link rel="stylesheet" href="assets/style.css"></head><body><header class="topbar">
+  <div class="brand">
+    <div class="logo" id="logo-container"></div>
+    <h1 data-i18n="brand">RESTAURANTES SIN FRONTERAS</h1>
+  </div>
+  <nav class="nav">
+    <a href="index.html" data-i18n="nav_dashboard">Dashboard</a>
+    <a href="restaurantes.html" data-i18n="nav_restaurants">Restaurantes</a>
+    <a href="menus.html" data-i18n="nav_menus">Menús</a>
+    <a href="facturacion.html" data-i18n="nav_billing">Facturación</a>
+    <a href="reportes.html" data-i18n="nav_reports">Reportes</a>
+    <a href="opiniones.html" data-i18n="nav_opinions">Opiniones</a>
+  </nav>
+  <div class="controls">
+    <select id="lang-select" onchange="setLang(this.value)"><option value="es">ES</option><option value="en">EN</option></select>
+    <button id="login-btn" onclick="showLogin()" data-i18n="login">Login</button>
+    <span id="user-badge" class="user-badge hidden"></span>
+  </div>
+</header>
+
+<main class="container">
+<section class="card">
+<h2>Reportes</h2>
+<div class="card">
+  <label>Desde:<input id="report-from" type="date"/></label>
+  <label>Hasta:<input id="report-to" type="date"/></label>
+  <button onclick="generateReport()">Generar</button>
+</div>
+<div class="card"><h3>Resumen</h3><div id="report-output"></div></div>
+</section>
+</main>
+<footer class="footer">© <span id="year"></span> RESTAURANTES SIN FRONTERAS - RSF. <span data-i18n="rights">Todos los derechos reservados.</span></footer>
+<script src="assets/app.js"></script>
+<script>
+function generateReport(){ const from = document.getElementById('report-from').value ? new Date(document.getElementById('report-from').value) : null; const to = document.getElementById('report-to').value ? new Date(document.getElementById('report-to').value) : null; const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); const filtered = (data.invoices||[]).filter(inv=>{ const d = new Date(inv.date); if(from && d<from) return false; if(to && d> new Date(to.getTime()+24*3600*1000)) return false; return true; }); const totals = {}; filtered.forEach(inv=>{ totals[inv.restaurantName] = (totals[inv.restaurantName]||0)+inv.total; }); let out = `<p>Facturas: ${filtered.length}</p><ul>`; for(const k in totals) out += `<li>${k}: ${totals[k]}</li>`; out += `</ul><p><strong>Total general:</strong> ${filtered.reduce((s,i)=>s+i.total,0)}</p>`; document.getElementById('report-output').innerHTML = out; }
+document.addEventListener('DOMContentLoaded', ()=>{ applyPermissions(); applyLang(); document.getElementById('year').textContent = new Date().getFullYear(); });
+</script>
+</body></html>

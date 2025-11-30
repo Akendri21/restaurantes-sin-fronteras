@@ -1,0 +1,71 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>RSF - Dashboard</title><link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
+<link rel="shortcut icon" href="assets/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="assets/site.webmanifest">
+<link rel="stylesheet" href="assets/style.css"></head><body><header class="topbar">
+  <div class="brand">
+    <div class="logo" id="logo-container"></div>
+    <h1 data-i18n="brand">RESTAURANTES SIN FRONTERAS</h1>
+  </div>
+  <nav class="nav">
+    <a href="index.html" data-i18n="nav_dashboard">Dashboard</a>
+    <a href="restaurantes.html" data-i18n="nav_restaurants">Restaurantes</a>
+    <a href="menus.html" data-i18n="nav_menus">Menús</a>
+    <a href="facturacion.html" data-i18n="nav_billing">Facturación</a>
+    <a href="reportes.html" data-i18n="nav_reports">Reportes</a>
+    <a href="opiniones.html" data-i18n="nav_opinions">Opiniones</a>
+  </nav>
+  <div class="controls">
+    <select id="lang-select" onchange="setLang(this.value)"><option value="es">ES</option><option value="en">EN</option></select>
+    <button id="login-btn" onclick="showLogin()" data-i18n="login">Login</button>
+    <span id="user-badge" class="user-badge hidden"></span>
+  </div>
+</header>
+
+<main class="container">
+<section class="card">
+<h2 data-i18n="nav_dashboard">Dashboard</h2>
+<div class="grid">
+  <div class="card"><h3>Total Restaurantes</h3><p id="total-restaurants">0</p></div>
+  <div class="card"><h3>Total Ventas</h3><p id="total-sales">0</p></div>
+  <div class="card"><h3>Opiniones</h3><p id="total-opinions">0</p></div>
+</div>
+<div class="card">
+  <h3 data-i18n="chain_info">Información de la Cadena</h3>
+  <label data-i18n="name">Nombre:<h5>RESTAURANTE SIN FRINTERAS</h5>
+  <label data-i18n="desc">Descripció<h5>Restaurante Mundialmente Conocido Con 3 Estrellas MICHELIN</h5>
+  <button onclick="saveChain()">Guardar</button>
+</div>
+</section>
+</main>
+<footer class="footer">© <span id="year"></span> RESTAURANTES SIN FRONTERAS - RSF. <span data-i18n="rights">Todos los derechos reservados.</span></footer>
+<div id="login-modal" class="card hidden" style="position:fixed;right:20px;top:80px;max-width:260px;">
+  <h4>Login (simulado)</h4>
+  <p class="small">Selecciona un rol:</p>
+  <button onclick="loginAs('admin')">Admin</button> <button onclick="loginAs('staff')">Staff</button> <button onclick="loginAs('viewer')">Viewer</button>
+</div>
+<script src="assets/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('year').textContent = new Date().getFullYear();
+  applyLang(); renderLogo(); updateDashboard();
+});
+function updateDashboard(){
+  const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}');
+  document.getElementById('total-restaurants').textContent = (data.restaurants||[]).length;
+  document.getElementById('total-opinions').textContent = (data.opinions||[]).length;
+  const sales = (data.invoices||[]).reduce((s,i)=>s+(i.total||0),0);
+  document.getElementById('total-sales').textContent = sales;
+  document.getElementById('chain-name').value = (data.chain && data.chain.name) || '';
+  document.getElementById('chain-desc').value = (data.chain && data.chain.desc) || '';
+}
+function saveChain(){
+  const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}');
+  data.chain = {name:document.getElementById('chain-name').value, desc:document.getElementById('chain-desc').value};
+  localStorage.setItem('rsf_data_v2', JSON.stringify(data));
+  alert('Guardado');
+  updateDashboard();
+}
+</script>
+</body></html>

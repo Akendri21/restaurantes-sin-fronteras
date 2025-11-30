@@ -1,0 +1,45 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>RSF - Menús</title><link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
+<link rel="shortcut icon" href="assets/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="assets/site.webmanifest">
+<link rel="stylesheet" href="assets/style.css"></head><body><header class="topbar">
+  <div class="brand">
+    <div class="logo" id="logo-container"></div>
+    <h1 data-i18n="brand">RESTAURANTES SIN FRONTERAS</h1>
+  </div>
+  <nav class="nav">
+    <a href="index.html" data-i18n="nav_dashboard">Dashboard</a>
+    <a href="restaurantes.html" data-i18n="nav_restaurants">Restaurantes</a>
+    <a href="menus.html" data-i18n="nav_menus">Menús</a>
+    <a href="facturacion.html" data-i18n="nav_billing">Facturación</a>
+    <a href="reportes.html" data-i18n="nav_reports">Reportes</a>
+    <a href="opiniones.html" data-i18n="nav_opinions">Opiniones</a>
+  </nav>
+  <div class="controls">
+    <select id="lang-select" onchange="setLang(this.value)"><option value="es">ES</option><option value="en">EN</option></select>
+    <button id="login-btn" onclick="showLogin()" data-i18n="login">Login</button>
+    <span id="user-badge" class="user-badge hidden"></span>
+  </div>
+</header>
+
+<main class="container">
+<section class="card">
+<h2>Menús</h2>
+<div class="card"><label>Seleccionar Restaurante:<select id="menu-rest-select"></select></label></div>
+<div class="card"><h3>Agregar / Editar Platillo</h3><input id="m-id" type="hidden"/><label>Nombre:<input id="m-name" data-readonly-for-viewer/></label><label>Descripción:<input id="m-desc" data-readonly-for-viewer/></label><label>Precio:<input id="m-price" type="number" step="0.01" data-readonly-for-viewer/></label><label>Categoría:<input id="m-category" data-readonly-for-viewer/></label><button onclick="saveMenuItem()" data-readonly-for-viewer>Guardar</button> <button onclick="clearMenuForm()" data-readonly-for-viewer>Nuevo</button></div>
+<div class="card"><h3>Lista del Menú</h3><table><thead><tr><th>Nombre</th><th>Descripción</th><th>Categoría</th><th>Precio</th><th>Acciones</th></tr></thead><tbody id="menu-tbody"></tbody></table></div>
+</section>
+</main>
+<footer class="footer">© <span id="year"></span> RESTAURANTES SIN FRONTERAS - RSF. <span data-i18n="rights">Todos los derechos reservados.</span></footer>
+<script src="assets/app.js"></script>
+<script>
+function populateMenuSelect(){ const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); const sel = document.getElementById('menu-rest-select'); sel.innerHTML=''; (data.restaurants||[]).forEach(r=>{ const o = document.createElement('option'); o.value=r.id; o.textContent = r.name+' — '+r.city; sel.appendChild(o); }); if(sel.options.length) sel.value = sel.options[0].value; renderMenu(); }
+function renderMenu(){ const id = document.getElementById('menu-rest-select').value; const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); const r = (data.restaurants||[]).find(x=>x.id===id); const tbody = document.getElementById('menu-tbody'); tbody.innerHTML=''; if(!r) return; r.menu.forEach(m=>{ const tr = document.createElement('tr'); tr.innerHTML = `<td>${m.name}</td><td>${m.desc}</td><td>${m.category}</td><td>${m.price}</td><td><button onclick="editMenu('${r.id}','${m.id}')">Editar</button> <button onclick="deleteMenu('${r.id}','${m.id}')" data-no-delete-for-staff>Eliminar</button></td>`; tbody.appendChild(tr); }); }
+function clearMenuForm(){ ['m-id','m-name','m-desc','m-price','m-category'].forEach(id=>document.getElementById(id).value=''); }
+function saveMenuItem(){ const rid = document.getElementById('menu-rest-select').value; if(!rid) return alert('Seleccione restaurante'); const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); const r = (data.restaurants||[]).find(x=>x.id===rid); const id = document.getElementById('m-id').value || ('m-'+Date.now()); const item = { id, name:document.getElementById('m-name').value, desc:document.getElementById('m-desc').value, price:parseFloat(document.getElementById('m-price').value)||0, category:document.getElementById('m-category').value }; const idx = r.menu.findIndex(x=>x.id===id); if(idx>=0) r.menu[idx]=item; else r.menu.push(item); localStorage.setItem('rsf_data_v2', JSON.stringify(data)); clearMenuForm(); renderMenu(); }
+function editMenu(rid, mid){ const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); const r = (data.restaurants||[]).find(x=>x.id===rid); const m = r.menu.find(x=>x.id===mid); document.getElementById('m-id').value=m.id; document.getElementById('m-name').value=m.name; document.getElementById('m-desc').value=m.desc; document.getElementById('m-price').value=m.price; document.getElementById('m-category').value=m.category; }
+function deleteMenu(rid, mid){ if(!confirm('Eliminar platillo?')) return; const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); const r = (data.restaurants||[]).find(x=>x.id===rid); r.menu = r.menu.filter(x=>x.id!==mid); localStorage.setItem('rsf_data_v2', JSON.stringify(data)); renderMenu(); }
+document.addEventListener('DOMContentLoaded', ()=>{ populateMenuSelect(); applyPermissions(); applyLang(); document.getElementById('year').textContent = new Date().getFullYear(); document.getElementById('menu-rest-select').addEventListener('change', renderMenu); });
+</script>
+</body></html>
