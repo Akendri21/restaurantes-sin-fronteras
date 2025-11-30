@@ -88,3 +88,15 @@ function applyPermissions(){
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{ renderLogo(); applyLang(); updateUserBadge(); applyPermissions(); });
+
+/* Mobile menu toggle */
+function initMobileMenu(){
+  const btn = document.getElementById('menu-btn');
+  const nav = document.querySelector('.nav');
+  if(!btn || !nav) return;
+  btn.addEventListener('click', ()=> nav.classList.toggle('open'));
+  window.addEventListener('resize', ()=>{ if(window.innerWidth > 800) nav.classList.remove('open'); });
+  document.addEventListener('click', (e)=>{ if(nav.classList.contains('open') && !e.target.closest('.nav') && !e.target.closest('#menu-btn')) nav.classList.remove('open'); });
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{ initMobileMenu(); });
