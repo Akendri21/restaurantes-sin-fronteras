@@ -27,9 +27,9 @@ img, svg{max-width:100%;height:auto}
 @media (max-width:800px){
 	.grid{flex-direction:column}
 	.nav{display:none;position:absolute;top:64px;left:0;right:0;background:linear-gradient(90deg,#0f172a,#0ea5a4);flex-direction:column;padding:10px 12px;gap:6px;z-index:20}
-	.nav.open{display:flex}
-	.nav a{padding:10px 12px;margin:0;border-radius:6px}
-	.menu-btn{display:block}
+	.nav.open{display:flex;animation:slideDown 190ms ease}
+	.nav a{padding:12px 14px;margin:0;border-radius:6px;font-size:18px}
+	.menu-btn{display:block;position:absolute;right:12px;top:12px;z-index:30}
 	.topbar{flex-wrap:wrap;align-items:center;padding:10px 12px;position:relative}
 	.brand h1{font-size:16px}
 	.logo svg{width:40px;height:40px}
@@ -47,3 +47,8 @@ img, svg{max-width:100%;height:auto}
 
 /* Ellipsis for long brand text on small screens */
 .brand h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+
+@keyframes slideDown{ from{transform:translateY(-6px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+/* Prevent body scroll when the mobile menu is open */
+body.no-scroll{overflow:hidden}
