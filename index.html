@@ -3,7 +3,9 @@
 <link rel="shortcut icon" href="assets/favicon.ico">
 <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="assets/site.webmanifest">
-<link rel="stylesheet" href="assets/style.css"></head><body><header class="topbar">
+<link rel="stylesheet" href="assets/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet"></head>
+<body><header class="topbar">
   <div class="brand">
     <div class="logo" id="logo-container"></div>
     <h1 data-i18n="brand">RESTAURANTES SIN FRONTERAS</h1>
@@ -34,11 +36,27 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   document.getElementById('year').textContent = new Date().getFullYear();
   applyLang(); renderLogo(); await updateDashboard();
 });
-</script>
+  </script>
+  <section class="card kpi-row">
     <div class="kpi">
-      <div class="kpi-head"><span class="kpi-title">Opiniones</span><small class="kpi-sub">(Últimas)</small></div>
+      <div class="kpi-head"><span class="kpi-title">Restaurantes</span><small class="kpi-sub">Total</small></div>
+      <div class="kpi-value"><span id="total-restaurants">0</span><span id="rest-growth" class="kpi-growth"></span></div>
+      <div class="kpi-spark"><canvas id="spark-restaurants" width="120" height="36"></canvas></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-head"><span class="kpi-title">Ventas</span><small class="kpi-sub">Total</small></div>
+      <div class="kpi-value"><span id="total-sales">0</span><span id="sales-growth" class="kpi-growth"></span></div>
+      <div class="kpi-spark"><canvas id="spark-sales" width="120" height="36"></canvas></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-head"><span class="kpi-title">Opiniones</span><small class="kpi-sub">Últimas</small></div>
       <div class="kpi-value"><span id="total-opinions">0</span><span id="opinions-growth" class="kpi-growth"></span></div>
       <div class="kpi-spark"><canvas id="spark-opinions" width="120" height="36"></canvas></div>
+    </div>
+    <div class="kpi" style="flex-basis:420px;min-width:320px;align-items:flex-end;">
+      <div class="kpi-head"><span class="kpi-title">Ventas (Tendencia)</span><small class="kpi-sub">Últimos 7</small></div>
+      <div style="width:100%;"><canvas id="salesChart" width="320" height="84"></canvas></div>
+      <div style="margin-top:6px;font-size:12px;color:var(--muted)">Rango: <input id="filter-start" type="date"/> - <input id="filter-end" type="date"/> <button onclick="applyFilters()">Aplicar</button> <button onclick="exportSalesCSV()">Exportar CSV</button></div>
     </div>
   </section>
 
@@ -74,6 +92,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   <p class="small">Selecciona un rol:</p>
   <button onclick="quickLogin('DUEÑO')">Admin (DUEÑO)</button> <button onclick="quickLogin('EMPLEADO1')">Staff (EMPLEADO1)</button> <button onclick="quickLogin('user')">Usuario (user)</button>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="assets/app.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', async ()=>{

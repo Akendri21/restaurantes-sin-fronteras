@@ -37,6 +37,7 @@ async function probeApi() {
 }
 
 let state = initDataOnce();
+let prevKPIs = { restaurants:0, sales:0, opinions:0 };
 
 function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
@@ -188,6 +189,17 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   renderLogo(); applyLang(); await probeApi(); if(USE_API){ await apiGetMe().catch(()=>{}); } updateUserBadge(); applyPermissions(); await requireAuth();
   // If we've passed requireAuth, mark the page as allowed
   document.documentElement.classList.add('auth-allowed');
+  // Initialize Chart if available
+  try{
+    const ctx = document.getElementById('salesChart');
+    if(ctx && typeof Chart !== 'undefined'){
+      window.salesChart = new Chart(ctx.getContext('2d'), {
+        type: 'line', data: { labels: [], datasets: [{ label: 'Ventas', data: [], borderColor: '#06b6d4', backgroundColor: 'rgba(6,182,212,0.08)', tension: 0.4, fill:true }] }, options: { responsive: true, maintainAspectRatio: false, plugins:{ legend:{ display:false } }, scales: { x:{ display:false }, y:{ display:false } } }
+      });
+    }
+  } catch(e){}
+  // Auto refresh basic interval
+  setInterval(()=>{ updateDashboard(); }, 60000);
 });
 
 /* Mobile menu toggle */
@@ -281,6 +293,41 @@ async function updateDashboard(){
   const oGrowth = computeGrowth(totalOpinions, Math.max(totalOpinions-1,0)); const og = document.getElementById('opinions-growth'); if(og){ og.textContent = `${oGrowth.pct}% ${oGrowth.dir === 'up' ? '↑' : '↓'}`; og.className = 'kpi-growth ' + (oGrowth.dir === 'up' ? 'g-up' : 'g-down'); }
 
   const lu = document.getElementById('last-updated'); if(lu) lu.textContent = new Date().toLocaleString();
+  // Update main Chart.js salesChart if present
+  try {
+    if(window.salesChart && window.salesChart.data){
+      const labels = sTrend.map((_,i)=>i+1);
+      window.salesChart.data.labels = labels;
+      window.salesChart.data.datasets[0].data = sTrend;
+      window.salesChart.update();
+    }
+  } catch(e){}
+
+  // Show small toast if major KPIs increased
+  try{
+    const thresholds = [ { key:'restaurants', val: totalRestaurants }, { key:'sales', val: totalSales }, { key:'opinions', val: totalOpinions } ];
+    const increased = thresholds.find(t=> t.val > (prevKPIs[t.key] || 0));
+    if(increased){ showToast(`Actualización: ${increased.key} aumentó a ${increased.val}`); }
+    prevKPIs = { restaurants: totalRestaurants, sales: totalSales, opinions: totalOpinions };
+  } catch(e){}
+}
+
+function showToast(msg, timeout=3000){ const t = document.createElement('div'); t.className='rsf-toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(()=>{ t.classList.add('show'); }, 10); setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=>t.remove(),320); }, timeout); }
+
+function applyFilters(){
+  const s = document.getElementById('filter-start').value; const e = document.getElementById('filter-end').value;
+  localStorage.setItem('rsf_filter_start', s || ''); localStorage.setItem('rsf_filter_end', e || '');
+  updateDashboard();
+}
+
+function exportSalesCSV(){
+  // Create CSV from sales-by-country table
+  const rows = [];
+  rows.push(['País','Ventas']);
+  document.querySelectorAll('#sales-by-country tbody tr').forEach(tr=>{ const tds = tr.querySelectorAll('td'); rows.push([tds[0].textContent.trim(), tds[1].textContent.trim()]); });
+  const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `ventas_por_pais_${new Date().toISOString().slice(0,10)}.csv`; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 1000);
 }
 
 // Save chain information (local or API if available)

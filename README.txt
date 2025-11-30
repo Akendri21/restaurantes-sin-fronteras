@@ -34,6 +34,12 @@ Despliegue del backend (opcional)
     npm start
     ```
   - Visita http://localhost:3000/login.html y usa los usuarios precargados (DUEÑO/DUEÑO123 etc).
+  4) Integración y pruebas rápidas:
+    - Hay un script PowerShell `scripts/integration_test.ps1` que intenta loguear y llamar a `/api/auth/me` y `/api/invoices`.
+    - Ejecútalo desde PowerShell con el servidor corriendo:
+      ```powershell
+      powershell -ExecutionPolicy Bypass -File .\scripts\integration_test.ps1
+      ```
 3) Para producción:
   - Configura `JWT_SECRET` como variable de entorno.
   - Implementa el servidor en un host (Railway, Render, Heroku, Vercel Serverless no recomendable) y actualiza `API_BASE` en `assets/app.js` si el dominio difiere.

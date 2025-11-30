@@ -242,6 +242,9 @@ app.delete('/api/restaurants/:id', requireAuth, requireRole('admin'), async (req
 
 app.get('/api/ping', (req, res) => res.json({ ok: true }));
 
+// Invoices endpoint (simple list) so frontend can fetch sales trends
+app.get('/api/invoices', requireAuth, async (req, res) => { await db.read(); res.json(db.data.data.invoices || []); });
+
 // Opinions endpoints
 app.get('/api/opinions', requireAuth, async (req, res) => { await db.read(); res.json(db.data.data.opinions || []); });
 app.post('/api/opinions', requireAuth, requireRole('staff'), async (req, res) => { await db.read(); const obj = { id: nanoid(8), ...req.body, createdBy: req.user.id, createdAt: Date.now() }; db.data.data.opinions.push(obj); await db.write(); res.json(obj); });
