@@ -110,15 +110,29 @@ function initMobileMenu(){
     // lock body scroll when menu is open
     if(opened) document.body.classList.add('no-scroll');
     else document.body.classList.remove('no-scroll');
+    btn.classList.toggle('open', opened);
   });
   window.addEventListener('resize', ()=>{ if(window.innerWidth > 800) nav.classList.remove('open'); });
-  document.addEventListener('click', (e)=>{ if(nav.classList.contains('open') && !e.target.closest('.nav') && !e.target.closest('#menu-btn')){ nav.classList.remove('open'); btn.setAttribute('aria-expanded','false'); document.body.classList.remove('no-scroll'); } });
+  document.addEventListener('click', (e)=>{ if(nav.classList.contains('open') && !e.target.closest('.nav') && !e.target.closest('#menu-btn')){ nav.classList.remove('open'); btn.setAttribute('aria-expanded','false'); document.body.classList.remove('no-scroll'); btn.classList.remove('open'); } });
 
   // close menu if a nav link is clicked (mobile)
-  nav.querySelectorAll('a').forEach(a => a.addEventListener('click', ()=>{ if(window.innerWidth <= 800){ nav.classList.remove('open'); btn.setAttribute('aria-expanded','false'); document.body.classList.remove('no-scroll'); } }));
+  nav.querySelectorAll('a').forEach(a => a.addEventListener('click', ()=>{ if(window.innerWidth <= 800){ nav.classList.remove('open'); btn.setAttribute('aria-expanded','false'); document.body.classList.remove('no-scroll'); btn.classList.remove('open'); } }));
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{ initMobileMenu(); });
+
+/* Helper: display inline messages and field validation state */
+function showFormMessage(formId, msg, type){
+  const el = document.getElementById(formId + '-msg');
+  if(!el) return; el.textContent = msg || '';
+  el.style.color = type === 'error' ? '#dc2626' : '#059669';
+}
+function markFieldInvalid(el){ if(!el) return; el.classList.add('field-invalid'); el.classList.remove('field-valid'); }
+function markFieldValid(el){ if(!el) return; el.classList.remove('field-invalid'); el.classList.add('field-valid'); }
+function clearFieldState(el){ if(!el) return; el.classList.remove('field-invalid'); el.classList.remove('field-valid'); }
+
+/* Toggle password visibility helper */
+function togglePasswordField(btn, fieldId){ const f = document.getElementById(fieldId); if(!f) return; if(f.type === 'password'){ f.type='text'; btn.textContent = 'Ocultar'; } else { f.type='password'; btn.textContent = 'Mostrar'; } }
 
 /* --- users (local demo auth) --- */
 function getUsers(){ return JSON.parse(localStorage.getItem('rsf_users_v1')||'[]'); }
@@ -126,6 +140,13 @@ function saveUsers(u){ localStorage.setItem('rsf_users_v1', JSON.stringify(u)); 
 function ensureDefaultUsers(){ const u = getUsers(); if(!u || u.length === 0) saveUsers([{username:'admin',password:'admin',role:'admin'},{username:'staff',password:'staff',role:'staff'},{username:'user',password:'user',role:'viewer'}]); }
 function registerUser(username,password,role){ if(!username||!password) return {ok:false,msg:'Missing fields'}; const users = getUsers(); if(users.find(x=>x.username.toLowerCase()===username.toLowerCase())) return {ok:false,msg:'Usuario ya existe'}; users.push({username,password,role}); saveUsers(users); return {ok:true,msg:'Usuario registrado'}; }
 function loginUser(username,password){ const users = getUsers(); const u = users.find(x=>x.username.toLowerCase()===username.toLowerCase() && x.password===password); if(!u) return {ok:false,msg:'Credenciales inválidas'}; sessionStorage.setItem('rsf_user', JSON.stringify({username:u.username,role:u.role})); sessionStorage.setItem('rsf_role', u.role); updateUserBadge(); applyPermissions(); return {ok:true,msg:'Login ok', user:u}; }
+
+function quickLogin(role){
+  // Demo quick login uses username == role and password == role
+  const resp = loginUser(role, role);
+  if(resp.ok){ window.location.href = 'index.html'; }
+  else alert(resp.msg);
+}
 
 // initialize sample users
 ensureDefaultUsers();

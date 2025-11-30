@@ -12,7 +12,11 @@
     <div class="logo" id="logo-container"></div>
     <h1 data-i18n="brand">RESTAURANTES SIN FRONTERAS</h1>
   </div>
-  <button id="menu-btn" class="menu-btn" aria-label="Menú" title="Menú">☰</button>
+  <button id="menu-btn" class="menu-btn" aria-label="Menú" title="Menú">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
   <nav class="nav" id="main-nav">
     <a href="index.html" data-i18n="nav_dashboard">Dashboard</a>
     <a href="restaurantes.html" data-i18n="nav_restaurants">Restaurantes</a>
@@ -34,23 +38,24 @@
     <div style="flex:1;min-width:260px;max-width:560px;">
       <h3>Login</h3>
       <form id="login-form" onsubmit="return handleLogin(event)">
-        <label>Usuario:<input id="login-username" required /></label>
-        <label>Contraseña:<input id="login-password" type="password" required /></label>
-        <button type="submit">Entrar</button>
+        <label>Usuario:<input id="login-username" required oninput="clearFieldState(this); showFormMessage('login-form','')" /></label>
+        <label>Contraseña:<div style="display:flex;gap:8px"><input id="login-password" type="password" required oninput="clearFieldState(this); showFormMessage('login-form','')" /><button type="button" class="pw-toggle" onclick="togglePasswordField(this,'login-password')">Mostrar</button></div></label>
+        <button id="login-submit" type="submit">Entrar</button>
+        <div id="login-form-msg" class="form-msg" style="display:block" aria-live="polite"></div>
       </form>
       <p class="small">O selecciona un rol rápido:</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button onclick="loginAs('admin')">Login como Admin</button>
-        <button onclick="loginAs('staff')">Login como Staff</button>
-        <button onclick="loginAs('viewer')">Login como Usuario</button>
+        <button type="button" onclick="quickLogin('admin')">Login como Admin</button>
+        <button type="button" onclick="quickLogin('staff')">Login como Staff</button>
+        <button type="button" onclick="quickLogin('user')">Login como Usuario</button>
       </div>
     </div>
     <div style="flex:1;min-width:260px;max-width:560px;">
       <h3>Register</h3>
       <form id="register-form" onsubmit="return handleRegister(event)">
-        <label>Usuario:<input id="reg-username" required /></label>
-        <label>Contraseña:<input id="reg-password" type="password" required /></label>
-        <label>Confirmar Contraseña:<input id="reg-password-confirm" type="password" required /></label>
+        <label>Usuario:<input id="reg-username" required oninput="clearFieldState(this); showFormMessage('register-form','')" /></label>
+        <label>Contraseña:<div style="display:flex;gap:8px"><input id="reg-password" type="password" required oninput="clearFieldState(this); showFormMessage('register-form','')" /><button type="button" class="pw-toggle" onclick="togglePasswordField(this,'reg-password')">Mostrar</button></div></label>
+        <label>Confirmar Contraseña:<div style="display:flex;gap:8px"><input id="reg-password-confirm" type="password" required oninput="clearFieldState(this); showFormMessage('register-form','')" /><button type="button" class="pw-toggle" onclick="togglePasswordField(this,'reg-password-confirm')">Mostrar</button></div></label>
         <label>Rol:
           <select id="reg-role">
             <option value="admin">Admin</option>
@@ -58,8 +63,9 @@
             <option value="viewer" selected>Usuario</option>
           </select>
         </label>
-        <button type="submit">Registrar</button>
+        <button id="reg-submit" type="submit">Registrar</button>
       </form>
+      <div id="register-form-msg" class="form-msg"></div>
       <p class="small">Registro guardado localmente (demo). Si ya existe el usuario, recibirás un mensaje.</p>
     </div>
   </section>
@@ -70,9 +76,9 @@
 <script>
   document.addEventListener('DOMContentLoaded', ()=>{ document.getElementById('year').textContent = new Date().getFullYear(); applyLang(); renderLogo(); initMobileMenu(); updateUserBadge(); });
 
-  function handleRegister(e){ e.preventDefault(); const username = document.getElementById('reg-username').value.trim(); const password = document.getElementById('reg-password').value; const confirm = document.getElementById('reg-password-confirm').value; const role = document.getElementById('reg-role').value; if(password !== confirm){ alert('Las contraseñas no coinciden'); return false; } if(!username || !password){ alert('Completa usuario y contraseña'); return false; } const resp = registerUser(username,password,role); if(!resp.ok) { alert(resp.msg); return false; } alert('Usuario registrado, ahora puedes iniciar sesión'); document.getElementById('register-form').reset(); return false; }
+  function handleRegister(e){ e.preventDefault(); const username = document.getElementById('reg-username'); const password = document.getElementById('reg-password'); const confirm = document.getElementById('reg-password-confirm'); const role = document.getElementById('reg-role').value; showFormMessage('register-form',''); clearFieldState(username); clearFieldState(password); clearFieldState(confirm); if(username.value.length < 3){ showFormMessage('register-form','El usuario debe tener al menos 3 caracteres','error'); markFieldInvalid(username); return false; } if(password.value.length < 4){ showFormMessage('register-form','La contraseña debe tener al menos 4 caracteres','error'); markFieldInvalid(password); return false; } if(password.value !== confirm.value){ showFormMessage('register-form','Las contraseñas no coinciden','error'); markFieldInvalid(confirm); return false; } if(!username.value || !password.value){ showFormMessage('register-form','Completa usuario y contraseña','error'); if(!username.value) markFieldInvalid(username); if(!password.value) markFieldInvalid(password); return false; } const resp = registerUser(username.value,password.value,role); if(!resp.ok) { showFormMessage('register-form',resp.msg,'error'); markFieldInvalid(username); return false; } showFormMessage('register-form','Usuario registrado. Inicia sesión.','success'); document.getElementById('register-form').reset(); return false; }
 
-  function handleLogin(e){ e.preventDefault(); const username = document.getElementById('login-username').value.trim(); const password = document.getElementById('login-password').value; const resp = loginUser(username,password); if(!resp.ok){ alert(resp.msg); return false; } alert('Bienvenido '+resp.user.username); window.location.href = 'index.html'; return false; }
+  function handleLogin(e){ e.preventDefault(); const usernameEl = document.getElementById('login-username'); const passwordEl = document.getElementById('login-password'); const username = usernameEl.value.trim(); const password = passwordEl.value; showFormMessage('login-form',''); clearFieldState(usernameEl); clearFieldState(passwordEl); if(!username || !password){ showFormMessage('login-form','Completa usuario y contraseña','error'); if(!username) markFieldInvalid(usernameEl); if(!password) markFieldInvalid(passwordEl); return false; } const resp = loginUser(username,password); if(!resp.ok){ showFormMessage('login-form',resp.msg,'error'); markFieldInvalid(usernameEl); markFieldInvalid(passwordEl); return false; } showFormMessage('login-form','Bienvenido '+resp.user.username,'success'); window.location.href = 'index.html'; return false; }
 </script>
 </body>
 </html>

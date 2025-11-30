@@ -8,7 +8,11 @@
     <div class="logo" id="logo-container"></div>
     <h1 data-i18n="brand">RESTAURANTES SIN FRONTERAS</h1>
   </div>
-  <button id="menu-btn" class="menu-btn" aria-label="Menú" title="Menú">☰</button>
+  <button id="menu-btn" class="menu-btn" aria-label="Menú" title="Menú">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
   <nav class="nav" id="main-nav">
     <a href="index.html" data-i18n="nav_dashboard">Dashboard</a>
     <a href="restaurantes.html" data-i18n="nav_restaurants">Restaurantes</a>
@@ -35,8 +39,8 @@
 </div>
 <div class="card">
   <h3 data-i18n="chain_info">Información de la Cadena</h3>
-  <label data-i18n="name">Nombre:<h5>RESTAURANTE SIN FRINTERAS</h5>
-  <label data-i18n="desc">Descripció<h5>Restaurante Mundialmente Conocido Con 3 Estrellas MICHELIN</h5>
+  <label data-i18n="name">Nombre:<h5>RESTAURANTE SIN FRONTERAS</h5>
+  <label data-i18n="desc">Descripción<h5>Restaurante Mundialmente Conocido Con 3 Estrellas MICHELIN</h5>
   <button onclick="saveChain()">Guardar</button>
 </div>
 </section>
@@ -45,7 +49,7 @@
 <div id="login-modal" class="card hidden" style="position:fixed;right:20px;top:80px;max-width:260px;">
   <h4>Login (simulado)</h4>
   <p class="small">Selecciona un rol:</p>
-  <button onclick="loginAs('admin')">Admin</button> <button onclick="loginAs('staff')">Staff</button> <button onclick="loginAs('viewer')">Viewer</button>
+  <button onclick="quickLogin('admin')">Admin</button> <button onclick="quickLogin('staff')">Staff</button> <button onclick="quickLogin('user')">Usuario</button>
 </div>
 <script src="assets/app.js"></script>
 <script>

@@ -29,7 +29,7 @@ img, svg{max-width:100%;height:auto}
 	.nav{display:none;position:absolute;top:64px;left:0;right:0;background:linear-gradient(90deg,#0f172a,#0ea5a4);flex-direction:column;padding:10px 12px;gap:6px;z-index:20}
 	.nav.open{display:flex;animation:slideDown 190ms ease}
 	.nav a{padding:12px 14px;margin:0;border-radius:6px;font-size:18px}
-	.menu-btn{display:block;position:absolute;right:12px;top:12px;z-index:30}
+	.menu-btn{display:block;position:absolute;right:12px;top:12px;z-index:30;padding:8px 10px;height:44px;width:44px}
 	.topbar{flex-wrap:wrap;align-items:center;padding:10px 12px;position:relative}
 	.brand h1{font-size:16px}
 	.logo svg{width:40px;height:40px}
@@ -39,6 +39,20 @@ img, svg{max-width:100%;height:auto}
 	.footer{font-size:13px}
 	table{display:block;overflow-x:auto}
 }
+
+/* Hamburger animation */
+.menu-btn{display:inline-flex;align-items:center;justify-content:center}
+.menu-btn span{display:block;width:22px;height:2px;background:#fff;border-radius:2px;transform-origin:center;transition:all 220ms ease}
+.menu-btn span + span{margin-top:4px}
+.menu-btn.open span:nth-child(1){transform:translateY(6px) rotate(45deg)}
+.menu-btn.open span:nth-child(2){opacity:0;transform:translateX(-8px)}
+.menu-btn.open span:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
+
+/* Form validation styles for login/register */
+.form-msg{margin-top:6px;font-size:13px;color:#b91c1c}
+.field-invalid{border-color:#f97316;box-shadow:0 0 0 3px rgba(249,115,22,0.06)}
+.field-valid{border-color:#10b981}
+.pw-toggle{background:transparent;border:0;color:var(--text);cursor:pointer;padding:8px;font-size:14px}
 
 /* Mobile behavior for the login modal */
 @media (max-width:800px){
