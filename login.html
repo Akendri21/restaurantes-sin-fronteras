@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RSF - Login / Register</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="logo" id="logo-container"></div>
+    <h1 data-i18n="brand">RESTAURANTES SIN FRONTERAS</h1>
+  </div>
+  <button id="menu-btn" class="menu-btn" aria-label="Menú" title="Menú">☰</button>
+  <nav class="nav" id="main-nav">
+    <a href="index.html" data-i18n="nav_dashboard">Dashboard</a>
+    <a href="restaurantes.html" data-i18n="nav_restaurants">Restaurantes</a>
+    <a href="menus.html" data-i18n="nav_menus">Menús</a>
+    <a href="facturacion.html" data-i18n="nav_billing">Facturación</a>
+    <a href="reportes.html" data-i18n="nav_reports">Reportes</a>
+    <a href="opiniones.html" data-i18n="nav_opinions">Opiniones</a>
+    <a href="login.html" data-i18n="login">Login</a>
+  </nav>
+  <div class="controls">
+    <select id="lang-select" onchange="setLang(this.value)"><option value="es">ES</option><option value="en">EN</option></select>
+    <button id="login-btn" onclick="showLogin()" data-i18n="login">Login</button>
+    <span id="user-badge" class="user-badge hidden"></span>
+  </div>
+</header>
+
+<main class="container">
+  <section class="card" style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;">
+    <div style="flex:1;min-width:260px;max-width:560px;">
+      <h3>Login</h3>
+      <form id="login-form" onsubmit="return handleLogin(event)">
+        <label>Usuario:<input id="login-username" required /></label>
+        <label>Contraseña:<input id="login-password" type="password" required /></label>
+        <button type="submit">Entrar</button>
+      </form>
+      <p class="small">O selecciona un rol rápido:</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="loginAs('admin')">Login como Admin</button>
+        <button onclick="loginAs('staff')">Login como Staff</button>
+        <button onclick="loginAs('viewer')">Login como Usuario</button>
+      </div>
+    </div>
+    <div style="flex:1;min-width:260px;max-width:560px;">
+      <h3>Register</h3>
+      <form id="register-form" onsubmit="return handleRegister(event)">
+        <label>Usuario:<input id="reg-username" required /></label>
+        <label>Contraseña:<input id="reg-password" type="password" required /></label>
+        <label>Confirmar Contraseña:<input id="reg-password-confirm" type="password" required /></label>
+        <label>Rol:
+          <select id="reg-role">
+            <option value="admin">Admin</option>
+            <option value="staff">Staff</option>
+            <option value="viewer" selected>Usuario</option>
+          </select>
+        </label>
+        <button type="submit">Registrar</button>
+      </form>
+      <p class="small">Registro guardado localmente (demo). Si ya existe el usuario, recibirás un mensaje.</p>
+    </div>
+  </section>
+</main>
+<footer class="footer">© <span id="year"></span> RESTAURANTES SIN FRONTERAS - RSF.</footer>
+
+<script src="assets/app.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', ()=>{ document.getElementById('year').textContent = new Date().getFullYear(); applyLang(); renderLogo(); initMobileMenu(); updateUserBadge(); });
+
+  function handleRegister(e){ e.preventDefault(); const username = document.getElementById('reg-username').value.trim(); const password = document.getElementById('reg-password').value; const confirm = document.getElementById('reg-password-confirm').value; const role = document.getElementById('reg-role').value; if(password !== confirm){ alert('Las contraseñas no coinciden'); return false; } if(!username || !password){ alert('Completa usuario y contraseña'); return false; } const resp = registerUser(username,password,role); if(!resp.ok) { alert(resp.msg); return false; } alert('Usuario registrado, ahora puedes iniciar sesión'); document.getElementById('register-form').reset(); return false; }
+
+  function handleLogin(e){ e.preventDefault(); const username = document.getElementById('login-username').value.trim(); const password = document.getElementById('login-password').value; const resp = loginUser(username,password); if(!resp.ok){ alert(resp.msg); return false; } alert('Bienvenido '+resp.user.username); window.location.href = 'index.html'; return false; }
+</script>
+</body>
+</html>

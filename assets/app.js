@@ -58,7 +58,11 @@ function showLogin(){
   const modal = document.getElementById('login-modal');
   if(modal) modal.classList.remove('hidden');
 }
-function loginAs(role){
+function loginAs(role, username){
+  // Simulated quick-login for demo/testing
+  const user = { username: username || role, role };
+  sessionStorage.setItem('rsf_user', JSON.stringify(user));
+  // For backward compatibility, set the old rsf_role key as well
   sessionStorage.setItem('rsf_role', role);
   updateUserBadge();
   const modal = document.getElementById('login-modal');
@@ -66,17 +70,19 @@ function loginAs(role){
   applyPermissions();
 }
 function logout(){
+  sessionStorage.removeItem('rsf_user');
   sessionStorage.removeItem('rsf_role');
   updateUserBadge();
   applyPermissions();
 }
-function currentRole(){ return sessionStorage.getItem('rsf_role') || null; }
+function currentUser(){ const raw = sessionStorage.getItem('rsf_user'); return raw && raw !== 'null' ? JSON.parse(raw) : null; }
+function currentRole(){ const u = currentUser(); if(u && u.role) return u.role; return sessionStorage.getItem('rsf_role') || null; }
 function updateUserBadge(){
   const badge = document.getElementById('user-badge');
-  const role = currentRole();
   const btn = document.getElementById('login-btn');
+  const user = currentUser();
   if(badge){
-    if(role){ badge.classList.remove('hidden'); badge.textContent = role.toUpperCase(); if(btn){ btn.textContent = 'Salir'; btn.onclick = logout; } }
+    if(user){ badge.classList.remove('hidden'); badge.textContent = `${user.username} (${user.role})`; if(btn){ btn.textContent = 'Salir'; btn.onclick = logout; } }
     else { badge.classList.add('hidden'); if(btn){ btn.textContent = translations[localStorage.getItem('rsf_lang')||'es'].login; btn.onclick = showLogin; } }
   }
 }
@@ -113,3 +119,13 @@ function initMobileMenu(){
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{ initMobileMenu(); });
+
+/* --- users (local demo auth) --- */
+function getUsers(){ return JSON.parse(localStorage.getItem('rsf_users_v1')||'[]'); }
+function saveUsers(u){ localStorage.setItem('rsf_users_v1', JSON.stringify(u)); }
+function ensureDefaultUsers(){ const u = getUsers(); if(!u || u.length === 0) saveUsers([{username:'admin',password:'admin',role:'admin'},{username:'staff',password:'staff',role:'staff'},{username:'user',password:'user',role:'viewer'}]); }
+function registerUser(username,password,role){ if(!username||!password) return {ok:false,msg:'Missing fields'}; const users = getUsers(); if(users.find(x=>x.username.toLowerCase()===username.toLowerCase())) return {ok:false,msg:'Usuario ya existe'}; users.push({username,password,role}); saveUsers(users); return {ok:true,msg:'Usuario registrado'}; }
+function loginUser(username,password){ const users = getUsers(); const u = users.find(x=>x.username.toLowerCase()===username.toLowerCase() && x.password===password); if(!u) return {ok:false,msg:'Credenciales inválidas'}; sessionStorage.setItem('rsf_user', JSON.stringify({username:u.username,role:u.role})); sessionStorage.setItem('rsf_role', u.role); updateUserBadge(); applyPermissions(); return {ok:true,msg:'Login ok', user:u}; }
+
+// initialize sample users
+ensureDefaultUsers();
