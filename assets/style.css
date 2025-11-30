@@ -15,6 +15,7 @@ html:not(.auth-allowed) .card{
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:linear-gradient(90deg,#0f172a,#0ea5a4);color:#fff;gap:12px}
 .brand{display:flex;align-items:center;gap:12px}
 .brand h1{margin:0;font-size:18px}
+.topbar .controls button{background:transparent;border:1px solid rgba(255,255,255,0.12);color:#fff;padding:8px 10px;border-radius:8px}
 .logo svg{width:48px;height:48px;border-radius:8px}
 .nav{display:flex;align-items:center;gap:8px}
 .nav a{margin-left:8px;padding:8px 10px;border-radius:6px;color:#fff;text-decoration:none;background:rgba(255,255,255,0.04)}
@@ -39,6 +40,8 @@ table tbody td{padding:8px;border-top:1px solid #f1f5f9}
 .dashboard-hero h2{font-size:20px;margin:0}
 .dashboard-hero .subtitle{color:var(--muted);margin-top:6px}
 .dashboard-hero .brand-short{background:linear-gradient(135deg,var(--accent),#06b6d4);color:white;padding:8px 12px;border-radius:8px;font-weight:700}
+.dashboard-hero button{background:transparent;border:1px solid rgba(6,182,212,0.12);padding:8px 10px;border-radius:8px;color:#062e2f;font-weight:600}
+.dashboard-hero button i{margin-right:8px}
 
 /* KPI row */
 .kpi-row{display:flex;gap:12px;align-items:stretch}
@@ -49,11 +52,12 @@ table tbody td{padding:8px;border-top:1px solid #f1f5f9}
 .kpi-title{font-weight:700;color:#0f172a}
 .kpi-sub{color:var(--muted);margin-left:8px}
 .kpi-value{display:flex;align-items:center;gap:8px;font-size:20px;color:#062e2f}
-.kpi-growth{font-size:13px;padding:2px 8px;border-radius:12px;background:#e6f6f6;color:#047857}
+.kpi-growth{font-size:13px;padding:6px 10px;border-radius:12px;background:#e6f6f6;color:#047857;font-weight:700}
 .kpi-growth.g-down{background:#fff4f2;color:#c0262a}
 .kpi-growth.g-up{background:#eafaf3;color:#0b6e4f}
 .kpi-spark{opacity:0.9}
 .kpi-spark canvas{display:block;width:100%;height:36px}
+.kpi .kpi-value .value-compact{font-size:14px;color:var(--muted)}
 
 /* Two column grid layout for content below KPIs */
 .two-col{display:grid;grid-template-columns:1fr 420px;gap:16px}
@@ -64,6 +68,8 @@ table tbody td{padding:8px;border-top:1px solid #f1f5f9}
 
 .rating-row{display:flex;align-items:center;gap:12px}
 .avg-rating{background:#0f172a;color:white;padding:12px 18px;border-radius:12px;font-weight:700;font-size:20px}
+/* Enhance Sales Chart container */
+.chart-wrap{height:120px;padding:8px;border-radius:8px}
 .rating-stats{color:var(--muted)}
 
 /* Sales table */
@@ -72,6 +78,19 @@ table tbody td{padding:8px;border-top:1px solid #f1f5f9}
 #sales-by-country td{padding:8px}
 #sales-by-country tr td:first-child{font-weight:600}
 #sales-by-country tr td:last-child{font-variant-numeric: tabular-nums}
+
+/* Sales progress bars per country */
+.country-bar{height:8px;background:#eef9f8;border-radius:6px;overflow:hidden}
+.country-bar .fill{height:100%;background:linear-gradient(90deg,#06b6d4,#0ea5a4);border-radius:6px}
+.country-row{display:flex;align-items:center;gap:10px}
+.country-row .country-name{flex:1}
+
+/* Top restaurants */
+.top-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+.top-list li{display:flex;align-items:center;justify-content:space-between;padding:10px;border-left:4px solid rgba(6,182,212,0.12);background:#fff;border-radius:8px}
+.top-list li .meta{display:flex;flex-direction:column;gap:4px}
+.top-list li .meta .name{font-weight:700}
+.top-list li .meta .sub{font-size:12px;color:var(--muted)}
 
 /* small screens */
 @media (max-width:1000px){

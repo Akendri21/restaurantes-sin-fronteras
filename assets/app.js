@@ -193,8 +193,16 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   try{
     const ctx = document.getElementById('salesChart');
     if(ctx && typeof Chart !== 'undefined'){
-      window.salesChart = new Chart(ctx.getContext('2d'), {
-        type: 'line', data: { labels: [], datasets: [{ label: 'Ventas', data: [], borderColor: '#06b6d4', backgroundColor: 'rgba(6,182,212,0.08)', tension: 0.4, fill:true }] }, options: { responsive: true, maintainAspectRatio: false, plugins:{ legend:{ display:false } }, scales: { x:{ display:false }, y:{ display:false } } }
+      const context = ctx.getContext('2d');
+      // Create gradient fill
+      const gradient = context.createLinearGradient(0, 0, 0, 120);
+      gradient.addColorStop(0, 'rgba(6,182,212,0.20)');
+      gradient.addColorStop(1, 'rgba(6,182,212,0.03)');
+      window.salesChart = new Chart(context, {
+        type: 'line',
+        data: { labels: [], datasets: [{ label: 'Ventas', data: [], borderColor: '#06b6d4', backgroundColor: gradient, tension: 0.35, fill:true, pointRadius: 3, pointHoverRadius: 6 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: (ctx)=> formatCurrency(ctx.parsed.y) } } }, scales: { x:{ display:false }, y:{ display:false } }, elements:{ line:{ borderWidth:2 } }
+        }
       });
     }
   } catch(e){}
@@ -246,6 +254,10 @@ function animateCounter(id, to, duration = 700){ const el = document.getElementB
 
 function formatCurrency(v){ if(typeof v === 'number') return v.toLocaleString(undefined,{style:'currency',currency:'USD'}); return v; }
 
+function formatCompactNumber(n){ if(typeof n !== 'number') return n; if(n >= 1000000) return (n/1000000).toFixed(1)+'M'; if(n >= 1000) return (n/1000).toFixed(1)+'k'; return n.toString(); }
+
+function animateCurrency(id, to, duration = 900, currency='USD'){ const el = document.getElementById(id); if(!el) return; const start = parseFloat((el.dataset.raw && Number(el.dataset.raw)) || 0); const diff = to - start; if(diff === 0){ el.textContent = formatCurrency(to); el.dataset.raw = to; return; } const startTime = performance.now(); function step(now){ const t = Math.min(1, (now - startTime)/duration); const cur = start + diff * t; el.textContent = formatCurrency(Math.round(cur*100)/100); if(t < 1) requestAnimationFrame(step); else { el.textContent = formatCurrency(to); el.dataset.raw = to; } } requestAnimationFrame(step); }
+
 function computeGrowth(current, previous){ if(previous === 0) return { pct: 100, dir: 'up'}; const diff = current - previous; const pct = Math.round((diff / Math.abs(previous)) * 100); return { pct, dir: pct >= 0 ? 'up' : 'down' }; }
 
 function drawSparkline(canvasId, dataPoints, color){ const c = document.getElementById(canvasId); if(!c || !dataPoints || dataPoints.length === 0) return; const ctx = c.getContext('2d'); const w = c.width; const h = c.height; ctx.clearRect(0,0,w,h); const max = Math.max(...dataPoints); const min = Math.min(...dataPoints); const range = (max - min) || 1; ctx.beginPath(); ctx.lineWidth = 2; ctx.strokeStyle = color || '#06b6d4'; dataPoints.forEach((v,i)=>{ const x = (i / (dataPoints.length-1)) * w; const y = h - ((v - min)/range) * h; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }); ctx.stroke(); }
@@ -255,6 +267,7 @@ function generateDemoTrendFromInvoices(invoices, len = 8){ const now = Date.now(
 function generateDemoTrendFromArray(arr, len=8){ const out = new Array(len).fill(0); for(let i=0;i<Math.min(arr.length,len);i++) out[len-1-i] = i+1; return out; }
 
 async function updateDashboard(){
+  setUpdateButtonLoading(true);
   // Grab data (API or local)
   let data;
   try{ if(typeof apiRequest === 'function' && (await probeApi())){ data = { restaurants: await apiRequest('/api/restaurants') || [], invoices: await apiRequest('/api/invoices').catch(()=>[]), opinions: await apiRequest('/api/opinions').catch(()=>[]) }; } else data = JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); } catch(err){ data = JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); }
@@ -266,16 +279,24 @@ async function updateDashboard(){
   const totalRestaurants = restaurants.length;
   const totalSales = (invoices||[]).reduce((s,i)=>s + (i.total||0),0);
   const totalOpinions = opinions.length;
-  document.getElementById('total-restaurants').textContent = totalRestaurants;
-  document.getElementById('total-sales').textContent = formatCurrency(totalSales);
-  document.getElementById('total-opinions').textContent = totalOpinions;
+  // Use animated counters for better UX
+  animateCounter('total-restaurants', totalRestaurants);
+  animateCurrency('total-sales', totalSales);
+  const sc = document.getElementById('sales-compact'); if(sc){ sc.textContent = `(${formatCompactNumber(totalSales)})`; }
+  animateCounter('total-opinions', totalOpinions);
 
   // Recent
   const recentList = document.getElementById('recent-restaurants'); if(recentList){ recentList.innerHTML=''; restaurants.slice(-5).reverse().forEach(r=>{ const li = document.createElement('li'); li.textContent = `${r.name} — ${r.city} (${r.country})`; recentList.appendChild(li); }); }
 
-  // Sales by country
+  // Top restaurants (by invoices total)
+  const byRestaurant = {};
+  (invoices||[]).forEach(inv=>{ const name = inv.restaurant || inv.restaurantName || inv.restaurantId || 'Unknown'; byRestaurant[name] = (byRestaurant[name]||0) + (inv.total||0); });
+  const topR = Object.entries(byRestaurant).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const topEl = document.getElementById('top-restaurants'); if(topEl){ topEl.innerHTML=''; if(topR.length === 0){ topEl.innerHTML = '<li class="small muted">Sin datos</li>'; } else { const maxv = topR[0][1] || 1; topR.forEach(([name,sum])=>{ const pct = Math.round((sum / (maxv || 1))*100); const li = document.createElement('li'); li.innerHTML = `<div class="meta"><div class="name">${name}</div><div class="sub">${formatCurrency(sum)} • ${pct}%</div></div><div style="min-width:80px;text-align:right">${formatCurrency(sum)}</div>`; topEl.appendChild(li); }); } }
+
+  // Sales by country (top 5 with progress bars)
   const byCountry = {}; (invoices||[]).forEach(inv=>{ const c = inv.country || inv.restaurantCountry || 'N/A'; byCountry[c] = (byCountry[c]||0) + (inv.total||0); });
-  const tbody = document.querySelector('#sales-by-country tbody'); if(tbody){ tbody.innerHTML=''; Object.entries(byCountry).sort((a,b)=>b[1]-a[1]).slice(0,5).forEach(([country,sum])=>{ const tr = document.createElement('tr'); tr.innerHTML = `<td>${country}</td><td style="text-align:right">${formatCurrency(sum)}</td>`; tbody.appendChild(tr); }); }
+  const tbody = document.querySelector('#sales-by-country tbody'); if(tbody){ tbody.innerHTML=''; const entries = Object.entries(byCountry).sort((a,b)=>b[1]-a[1]).slice(0,5); const maxv = entries.length ? entries[0][1] : 1; entries.forEach(([country,sum])=>{ const tr = document.createElement('tr'); const pct = Math.round((sum / (maxv || 1)) * 100); tr.innerHTML = `<td><div class="country-row"><div class="country-name">${country}</div><div class="country-bar" aria-hidden><div class="fill" style="width:${pct}%"></div></div></div></td><td style="text-align:right">${formatCurrency(sum)}</td>`; tbody.appendChild(tr); }); }
 
   // Avg rating
   const avg = opinions.length ? (opinions.reduce((s,o)=>s + (o.rating||0),0) / opinions.length).toFixed(2) : '—'; const ar = document.getElementById('avg-rating'); if(ar){ ar.textContent = avg; }
@@ -310,7 +331,12 @@ async function updateDashboard(){
     if(increased){ showToast(`Actualización: ${increased.key} aumentó a ${increased.val}`); }
     prevKPIs = { restaurants: totalRestaurants, sales: totalSales, opinions: totalOpinions };
   } catch(e){}
+  // Update 'last updated' text
+  const lu = document.getElementById('last-updated'); if(lu) lu.textContent = new Date().toLocaleString();
+  setUpdateButtonLoading(false);
 }
+
+function setUpdateButtonLoading(val){ const btn = document.getElementById('update-btn'); if(!btn) return; const icon = btn.querySelector('i'); if(val){ btn.disabled = true; if(icon) { icon.classList.remove('fa-arrows-rotate'); icon.classList.add('fa-spinner','fa-spin'); } } else { btn.disabled = false; if(icon){ icon.classList.remove('fa-spinner','fa-spin'); icon.classList.add('fa-arrows-rotate'); } } }
 
 function showToast(msg, timeout=3000){ const t = document.createElement('div'); t.className='rsf-toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(()=>{ t.classList.add('show'); }, 10); setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=>t.remove(),320); }, timeout); }
 

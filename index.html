@@ -5,6 +5,7 @@
 <link rel="manifest" href="assets/site.webmanifest">
 <link rel="stylesheet" href="assets/style.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet"></head>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-pz6+0j6qf6g2wY1nQbqZfOaUe3z0h3mU6pyw1oE6m+VJ4k9b5eM8hQ8C7Yy7wJ1Ia6pVt+F2R4H1QeIw4M0agA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <body><header class="topbar">
   <div class="brand">
     <div class="logo" id="logo-container"></div>
@@ -30,32 +31,41 @@
     <button id="login-btn" onclick="showLogin()" data-i18n="login">Login</button>
     <span id="user-badge" class="user-badge hidden"></span>
   </div>
+  <div class="container">
+    <div class="dashboard-hero card">
+      <div>
+        <h2>Panel de control</h2>
+        <div class="subtitle">Resumen de operaciones, actividad y KPIs</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="muted" id="last-updated"></div>
+        <button id="update-btn" onclick="updateDashboard()" title="Actualizar" aria-label="Actualizar datos"><i class="fa-solid fa-arrows-rotate"></i> Actualizar</button>
+        <button id="export-btn" onclick="exportSalesCSV()" title="Exportar CSV" aria-label="Exportar CSV"><i class="fa-solid fa-file-csv"></i> Exportar</button>
+      </div>
+    </div>
+</div>
 </header>
-<script>
-document.addEventListener('DOMContentLoaded', async ()=>{
-  document.getElementById('year').textContent = new Date().getFullYear();
-  applyLang(); renderLogo(); await updateDashboard();
-});
-  </script>
+<!-- Script initialization runs after app.js is loaded -->
+<main class="container">
   <section class="card kpi-row">
     <div class="kpi">
       <div class="kpi-head"><span class="kpi-title">Restaurantes</span><small class="kpi-sub">Total</small></div>
-      <div class="kpi-value"><span id="total-restaurants">0</span><span id="rest-growth" class="kpi-growth"></span></div>
+      <div class="kpi-value"><i class="fa-solid fa-utensils" style="color:#0ea5a4"></i><span id="total-restaurants">0</span><span id="rest-growth" class="kpi-growth"></span></div>
       <div class="kpi-spark"><canvas id="spark-restaurants" width="120" height="36"></canvas></div>
     </div>
     <div class="kpi">
       <div class="kpi-head"><span class="kpi-title">Ventas</span><small class="kpi-sub">Total</small></div>
-      <div class="kpi-value"><span id="total-sales">0</span><span id="sales-growth" class="kpi-growth"></span></div>
+      <div class="kpi-value"><i class="fa-solid fa-dollar-sign" style="color:#06b6d4"></i><span id="total-sales">0</span><span class="value-compact" id="sales-compact"></span><span id="sales-growth" class="kpi-growth"></span></div>
       <div class="kpi-spark"><canvas id="spark-sales" width="120" height="36"></canvas></div>
     </div>
     <div class="kpi">
       <div class="kpi-head"><span class="kpi-title">Opiniones</span><small class="kpi-sub">Últimas</small></div>
-      <div class="kpi-value"><span id="total-opinions">0</span><span id="opinions-growth" class="kpi-growth"></span></div>
+      <div class="kpi-value"><i class="fa-solid fa-star" style="color:#f97316"></i><span id="total-opinions">0</span><span id="opinions-growth" class="kpi-growth"></span></div>
       <div class="kpi-spark"><canvas id="spark-opinions" width="120" height="36"></canvas></div>
     </div>
     <div class="kpi" style="flex-basis:420px;min-width:320px;align-items:flex-end;">
       <div class="kpi-head"><span class="kpi-title">Ventas (Tendencia)</span><small class="kpi-sub">Últimos 7</small></div>
-      <div style="width:100%;"><canvas id="salesChart" width="320" height="84"></canvas></div>
+      <div class="chart-wrap" style="width:100%;"><canvas id="salesChart" width="320" height="84"></canvas></div>
       <div style="margin-top:6px;font-size:12px;color:var(--muted)">Rango: <input id="filter-start" type="date"/> - <input id="filter-end" type="date"/> <button onclick="applyFilters()">Aplicar</button> <button onclick="exportSalesCSV()">Exportar CSV</button></div>
     </div>
   </section>
@@ -65,6 +75,10 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       <div class="card">
         <h3>Actividad reciente</h3>
         <ul id="recent-restaurants" class="recent-list small"></ul>
+      </div>
+      <div class="card">
+        <h3>Top restaurantes por ventas</h3>
+        <ul id="top-restaurants" class="top-list small"></ul>
       </div>
       <div class="card">
         <h3 data-i18n="chain_info">Información de la Cadena</h3>
@@ -84,7 +98,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       </div>
     </div>
   </section>
-  
 </main>
 <footer class="footer">© <span id="year"></span> RESTAURANTES SIN FRONTERAS - RSF. <span data-i18n="rights">Todos los derechos reservados.</span></footer>
 <div id="login-modal" class="card hidden" style="position:fixed;right:20px;top:80px;max-width:260px;">
