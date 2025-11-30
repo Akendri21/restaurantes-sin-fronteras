@@ -232,6 +232,71 @@ function togglePasswordField(btn, fieldId){ const f = document.getElementById(fi
 // Animated counter helper used in dashboard
 function animateCounter(id, to, duration = 700){ const el = document.getElementById(id); if(!el) return; const start = parseInt(el.textContent || '0', 10); const diff = to - start; if(diff === 0){ el.textContent = to; return; } const startTime = performance.now(); function step(now){ const t = Math.min(1, (now - startTime)/duration); const cur = Math.floor(start + diff * t); el.textContent = cur; if(t < 1) requestAnimationFrame(step); else el.textContent = to; } requestAnimationFrame(step); }
 
+function formatCurrency(v){ if(typeof v === 'number') return v.toLocaleString(undefined,{style:'currency',currency:'USD'}); return v; }
+
+function computeGrowth(current, previous){ if(previous === 0) return { pct: 100, dir: 'up'}; const diff = current - previous; const pct = Math.round((diff / Math.abs(previous)) * 100); return { pct, dir: pct >= 0 ? 'up' : 'down' }; }
+
+function drawSparkline(canvasId, dataPoints, color){ const c = document.getElementById(canvasId); if(!c || !dataPoints || dataPoints.length === 0) return; const ctx = c.getContext('2d'); const w = c.width; const h = c.height; ctx.clearRect(0,0,w,h); const max = Math.max(...dataPoints); const min = Math.min(...dataPoints); const range = (max - min) || 1; ctx.beginPath(); ctx.lineWidth = 2; ctx.strokeStyle = color || '#06b6d4'; dataPoints.forEach((v,i)=>{ const x = (i / (dataPoints.length-1)) * w; const y = h - ((v - min)/range) * h; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }); ctx.stroke(); }
+
+function generateDemoTrendFromInvoices(invoices, len = 8){ const now = Date.now(); const bucketMs = 1000*60*60*24; const arr = new Array(len).fill(0); invoices.forEach(inv=>{ const d = new Date(inv.date||inv.createdAt||now).getTime(); const bucketIndex = Math.floor(((d - (now - len * bucketMs)) / (bucketMs))); if(bucketIndex >=0 && bucketIndex < len) arr[bucketIndex] += inv.total || 0; }); return arr.map(x=>Math.round(x)); }
+
+function generateDemoTrendFromArray(arr, len=8){ const out = new Array(len).fill(0); for(let i=0;i<Math.min(arr.length,len);i++) out[len-1-i] = i+1; return out; }
+
+async function updateDashboard(){
+  // Grab data (API or local)
+  let data;
+  try{ if(typeof apiRequest === 'function' && (await probeApi())){ data = { restaurants: await apiRequest('/api/restaurants') || [], invoices: await apiRequest('/api/invoices').catch(()=>[]), opinions: await apiRequest('/api/opinions').catch(()=>[]) }; } else data = JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); } catch(err){ data = JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); }
+  const restaurants = data.restaurants || [];
+  const invoices = data.invoices || [];
+  const opinions = data.opinions || [];
+
+  // KPIs
+  const totalRestaurants = restaurants.length;
+  const totalSales = (invoices||[]).reduce((s,i)=>s + (i.total||0),0);
+  const totalOpinions = opinions.length;
+  document.getElementById('total-restaurants').textContent = totalRestaurants;
+  document.getElementById('total-sales').textContent = formatCurrency(totalSales);
+  document.getElementById('total-opinions').textContent = totalOpinions;
+
+  // Recent
+  const recentList = document.getElementById('recent-restaurants'); if(recentList){ recentList.innerHTML=''; restaurants.slice(-5).reverse().forEach(r=>{ const li = document.createElement('li'); li.textContent = `${r.name} — ${r.city} (${r.country})`; recentList.appendChild(li); }); }
+
+  // Sales by country
+  const byCountry = {}; (invoices||[]).forEach(inv=>{ const c = inv.country || inv.restaurantCountry || 'N/A'; byCountry[c] = (byCountry[c]||0) + (inv.total||0); });
+  const tbody = document.querySelector('#sales-by-country tbody'); if(tbody){ tbody.innerHTML=''; Object.entries(byCountry).sort((a,b)=>b[1]-a[1]).slice(0,5).forEach(([country,sum])=>{ const tr = document.createElement('tr'); tr.innerHTML = `<td>${country}</td><td style="text-align:right">${formatCurrency(sum)}</td>`; tbody.appendChild(tr); }); }
+
+  // Avg rating
+  const avg = opinions.length ? (opinions.reduce((s,o)=>s + (o.rating||0),0) / opinions.length).toFixed(2) : '—'; const ar = document.getElementById('avg-rating'); if(ar){ ar.textContent = avg; }
+  const rs = document.getElementById('rating-stats'); if(rs){ rs.textContent = opinions.length ? `${opinions.length} reseñas` : 'Sin reseñas'; }
+
+  // Sparks
+  drawSparkline('spark-sales', generateDemoTrendFromInvoices(invoices,8), '#06b6d4');
+  drawSparkline('spark-restaurants', generateDemoTrendFromArray(restaurants,8), '#0ea5a4');
+  drawSparkline('spark-opinions', generateDemoTrendFromArray(opinions,8), '#f97316');
+
+  // Growth (demo): compare last half vs first half
+  const sTrend = generateDemoTrendFromInvoices(invoices,8); const half = Math.floor(sTrend.length/2); const prev = sTrend.slice(0,half).reduce((s,x)=>s+x,0); const cur = sTrend.slice(half).reduce((s,x)=>s+x,0); const g = computeGrowth(cur,prev);
+  const salesGrowth = document.getElementById('sales-growth'); if(salesGrowth){ salesGrowth.textContent = `${g.pct}% ${g.dir === 'up' ? '↑' : '↓'}`; salesGrowth.className = 'kpi-growth ' + (g.dir === 'up' ? 'g-up' : 'g-down'); }
+  const rGrowth = computeGrowth(totalRestaurants, Math.max(totalRestaurants-1,0)); const rg = document.getElementById('rest-growth'); if(rg){ rg.textContent = `${rGrowth.pct}% ${rGrowth.dir === 'up' ? '↑' : '↓'}`; rg.className = 'kpi-growth ' + (rGrowth.dir === 'up' ? 'g-up' : 'g-down'); }
+  const oGrowth = computeGrowth(totalOpinions, Math.max(totalOpinions-1,0)); const og = document.getElementById('opinions-growth'); if(og){ og.textContent = `${oGrowth.pct}% ${oGrowth.dir === 'up' ? '↑' : '↓'}`; og.className = 'kpi-growth ' + (oGrowth.dir === 'up' ? 'g-up' : 'g-down'); }
+
+  const lu = document.getElementById('last-updated'); if(lu) lu.textContent = new Date().toLocaleString();
+}
+
+// Save chain information (local or API if available)
+async function saveChain(){
+  const name = document.getElementById('chain-name').value;
+  const desc = document.getElementById('chain-desc').value;
+  if(typeof apiRequest === 'function' && USE_API){
+    // Optionally, server endpoint could persist chain; fallback to localStorage
+    try{ /* No /api/chain endpoint by default */ } catch(e){}
+  }
+  // Save locally
+  const data = JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); data.chain = { name, desc }; localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  const msgEl = document.getElementById('chain-saved'); if(msgEl){ msgEl.textContent = 'Guardado'; setTimeout(()=>msgEl.textContent='';, 2500); }
+  updateDashboard();
+}
+
 /* --- users (local demo auth) --- */
 function getUsers(){ return JSON.parse(localStorage.getItem('rsf_users_v1')||'[]'); }
 function saveUsers(u){ localStorage.setItem('rsf_users_v1', JSON.stringify(u)); }

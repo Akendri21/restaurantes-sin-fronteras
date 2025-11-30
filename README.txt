@@ -3,6 +3,7 @@ RESTAURANTES SIN FRONTERAS - Sistema de Gestión (v2)
 
 Cambios incluidos en esta versión:
 - Proyecto multi-página (index, restaurantes, menus, facturacion, reportes, opiniones).
+ - Proyecto multi-página (index, restaurantes, menus, facturacion, reportes, opiniones). El dashboard ahora se ve más profesional con KPIs, tendencias y actividad reciente.
 - Plantilla de factura imprimible (assets/invoice_print.html) para abrir en nueva ventana y generar PDF desde el navegador.
 - Internacionalización (ES/EN) con selector de idioma.
 - Sistema simulado de roles de usuario (Admin, Staff, Viewer) con permisos:

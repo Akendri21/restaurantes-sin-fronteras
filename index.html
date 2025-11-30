@@ -29,35 +29,44 @@
     <span id="user-badge" class="user-badge hidden"></span>
   </div>
 </header>
+<script>
+document.addEventListener('DOMContentLoaded', async ()=>{
+  document.getElementById('year').textContent = new Date().getFullYear();
+  applyLang(); renderLogo(); await updateDashboard();
+});
+</script>
+    <div class="kpi">
+      <div class="kpi-head"><span class="kpi-title">Opiniones</span><small class="kpi-sub">(Últimas)</small></div>
+      <div class="kpi-value"><span id="total-opinions">0</span><span id="opinions-growth" class="kpi-growth"></span></div>
+      <div class="kpi-spark"><canvas id="spark-opinions" width="120" height="36"></canvas></div>
+    </div>
+  </section>
 
-<main class="container">
-<section class="card">
-<h2 data-i18n="nav_dashboard">Dashboard</h2>
-  <div class="grid">
-  <a class="card stat-card" href="restaurantes.html" title="Ver restaurantes">
-    <h3>Total Restaurantes</h3>
-    <p id="total-restaurants">0</p>
-  </a>
-  <a class="card stat-card" href="facturacion.html" title="Ver ventas">
-    <h3>Total Ventas</h3>
-    <p id="total-sales">0</p>
-  </a>
-  <a class="card stat-card" href="opiniones.html" title="Ver opiniones">
-    <h3>Opiniones</h3>
-    <p id="total-opinions">0</p>
-  </a>
-</div>
-<div class="card">
-  <h3>Últimos restaurantes</h3>
-  <ul id="recent-restaurants" class="small"></ul>
-</div>
-  <div class="card">
-  <h3 data-i18n="chain_info">Información de la Cadena</h3>
-  <label data-i18n="name">Nombre:<input id="chain-name" data-readonly-for-viewer/></label>
-  <label data-i18n="desc">Descripción:<input id="chain-desc" data-readonly-for-viewer/></label>
-  <button onclick="saveChain()" data-readonly-for-viewer>Guardar</button>
-</div>
-</section>
+  <section class="card grid two-col">
+    <div>
+      <div class="card">
+        <h3>Actividad reciente</h3>
+        <ul id="recent-restaurants" class="recent-list small"></ul>
+      </div>
+      <div class="card">
+        <h3 data-i18n="chain_info">Información de la Cadena</h3>
+        <label data-i18n="name">Nombre:<input id="chain-name" data-readonly-for-viewer/></label>
+        <label data-i18n="desc">Descripción:<input id="chain-desc" data-readonly-for-viewer/></label>
+        <div style="display:flex;gap:8px;margin-top:8px"><button onclick="saveChain()" data-readonly-for-viewer>Guardar</button><span class="small muted" id="chain-saved"></span></div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>Ventas por país (Top 5)</h3>
+        <table id="sales-by-country"><tbody></tbody></table>
+      </div>
+      <div class="card">
+        <h3>Promedio de reseñas</h3>
+        <div class="rating-row"><div class="avg-rating" id="avg-rating">—</div><div class="rating-stats small" id="rating-stats">—</div></div>
+      </div>
+    </div>
+  </section>
+  
 </main>
 <footer class="footer">© <span id="year"></span> RESTAURANTES SIN FRONTERAS - RSF. <span data-i18n="rights">Todos los derechos reservados.</span></footer>
 <div id="login-modal" class="card hidden" style="position:fixed;right:20px;top:80px;max-width:260px;">
@@ -71,30 +80,5 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   document.getElementById('year').textContent = new Date().getFullYear();
   applyLang(); renderLogo(); await updateDashboard();
 });
-async function updateDashboard(){
-  let data;
-  if(typeof apiRequest === 'function' && (await probeApi())){
-    try{ data = { restaurants: await apiRequest('/api/restaurants'), invoices: [], opinions: [] }; } catch(err){ data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); }
-  } else { data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}'); }
-  const restaurantsCount = (data.restaurants||[]).length;
-  const opinionsCount = (data.opinions||[]).length;
-  const sales = (data.invoices||[]).reduce((s,i)=>s+(i.total||0),0);
-  animateCounter('total-restaurants', restaurantsCount);
-  animateCounter('total-opinions', opinionsCount);
-  animateCounter('total-sales', sales);
-  // recent restaurants (last 3)
-  const recentList = document.getElementById('recent-restaurants');
-  recentList.innerHTML = '';
-  (data.restaurants||[]).slice(-3).reverse().forEach(r=>{ const li = document.createElement('li'); li.textContent = `${r.name} — ${r.city}`; recentList.appendChild(li); });
-  document.getElementById('chain-name').value = (data.chain && data.chain.name) || '';
-  document.getElementById('chain-desc').value = (data.chain && data.chain.desc) || '';
-}
-function saveChain(){
-  const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}');
-  data.chain = {name:document.getElementById('chain-name').value, desc:document.getElementById('chain-desc').value};
-  localStorage.setItem('rsf_data_v2', JSON.stringify(data));
-  alert('Guardado');
-  updateDashboard();
-}
 </script>
 </body></html>

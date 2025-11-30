@@ -33,6 +33,51 @@ table tbody td{padding:8px;border-top:1px solid #f1f5f9}
 .small{font-size:13px;color:var(--muted)}
 .stat-card p{font-size:20px;margin:0;font-weight:700}
 .stat-card h3{font-size:14px;margin:0 0 6px 0}
+
+/* Dashboard hero */
+.dashboard-hero{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;margin-bottom:18px}
+.dashboard-hero h2{font-size:20px;margin:0}
+.dashboard-hero .subtitle{color:var(--muted);margin-top:6px}
+.dashboard-hero .brand-short{background:linear-gradient(135deg,var(--accent),#06b6d4);color:white;padding:8px 12px;border-radius:8px;font-weight:700}
+
+/* KPI row */
+.kpi-row{display:flex;gap:12px;align-items:stretch}
+.kpi{flex:1;background:linear-gradient(180deg,#fff,#fbfcfd);padding:14px;border-radius:8px;border:1px solid #e6eef0;display:flex;flex-direction:column;justify-content:space-between}
+.kpi{transition:transform 160ms ease, box-shadow 160ms ease}
+.kpi:hover{transform:translateY(-4px);box-shadow:0 12px 30px rgba(6,41,45,0.08)}
+.kpi-head{display:flex;justify-content:space-between;align-items:center}
+.kpi-title{font-weight:700;color:#0f172a}
+.kpi-sub{color:var(--muted);margin-left:8px}
+.kpi-value{display:flex;align-items:center;gap:8px;font-size:20px;color:#062e2f}
+.kpi-growth{font-size:13px;padding:2px 8px;border-radius:12px;background:#e6f6f6;color:#047857}
+.kpi-growth.g-down{background:#fff4f2;color:#c0262a}
+.kpi-growth.g-up{background:#eafaf3;color:#0b6e4f}
+.kpi-spark{opacity:0.9}
+.kpi-spark canvas{display:block;width:100%;height:36px}
+
+/* Two column grid layout for content below KPIs */
+.two-col{display:grid;grid-template-columns:1fr 420px;gap:16px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.recent-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.recent-list li{padding:8px;border-left:4px solid #e6eef0;background:#fff;border-radius:6px}
+
+.rating-row{display:flex;align-items:center;gap:12px}
+.avg-rating{background:#0f172a;color:white;padding:12px 18px;border-radius:12px;font-weight:700;font-size:20px}
+.rating-stats{color:var(--muted)}
+
+/* Sales table */
+#sales-by-country{width:100%;border-collapse:collapse}
+#sales-by-country tbody tr{border-bottom:1px solid #f1f5f9}
+#sales-by-country td{padding:8px}
+#sales-by-country tr td:first-child{font-weight:600}
+#sales-by-country tr td:last-child{font-variant-numeric: tabular-nums}
+
+/* small screens */
+@media (max-width:1000px){
+	.two-col{grid-template-columns:1fr}
+	.kpi-row{flex-direction:column}
+}
 /* Mobile responsive styles */
 .menu-btn{display:none;background:transparent;border:0;color:white;padding:6px;font-size:24px;cursor:pointer;border-radius:6px}
 img, svg{max-width:100%;height:auto}
@@ -73,6 +118,9 @@ img, svg{max-width:100%;height:auto}
 
 /* Ellipsis for long brand text on small screens */
 .brand h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+
+/* Make KPI number stable width */
+.kpi-value span:first-child{min-width:90px;display:inline-block}
 
 @keyframes slideDown{ from{transform:translateY(-6px);opacity:0} to{transform:translateY(0);opacity:1} }
 
