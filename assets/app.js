@@ -89,8 +89,10 @@ function updateUserBadge(){
 function applyPermissions(){
   const role = currentRole();
   document.querySelectorAll('[data-admin-only]').forEach(el=>el.style.display = (role==='admin')?'inline-block':'none');
-  document.querySelectorAll('[data-no-delete-for-staff]').forEach(el=>{ if(role==='staff') el.disabled = true; else el.disabled = false; });
-  document.querySelectorAll('[data-readonly-for-viewer]').forEach(el=>{ if(role==='viewer') el.disabled = true; else el.disabled = false; });
+  // Elements marked with data-no-delete-for-staff are treated as admin-only (hide for staff/viewers)
+  document.querySelectorAll('[data-no-delete-for-staff]').forEach(el=>{ if(role==='admin'){ el.style.display = 'inline-block'; el.disabled = false; } else { el.style.display = 'none'; el.disabled = true; } });
+  // Elements that should be read-only for viewers
+  document.querySelectorAll('[data-readonly-for-viewer]').forEach(el=>{ if(role==='viewer'){ el.disabled = true; } else { el.disabled = false; } });
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{ renderLogo(); applyLang(); updateUserBadge(); applyPermissions(); });
@@ -134,15 +136,29 @@ function clearFieldState(el){ if(!el) return; el.classList.remove('field-invalid
 /* Toggle password visibility helper */
 function togglePasswordField(btn, fieldId){ const f = document.getElementById(fieldId); if(!f) return; if(f.type === 'password'){ f.type='text'; btn.textContent = 'Ocultar'; } else { f.type='password'; btn.textContent = 'Mostrar'; } }
 
+// Animated counter helper used in dashboard
+function animateCounter(id, to, duration = 700){ const el = document.getElementById(id); if(!el) return; const start = parseInt(el.textContent || '0', 10); const diff = to - start; if(diff === 0){ el.textContent = to; return; } const startTime = performance.now(); function step(now){ const t = Math.min(1, (now - startTime)/duration); const cur = Math.floor(start + diff * t); el.textContent = cur; if(t < 1) requestAnimationFrame(step); else el.textContent = to; } requestAnimationFrame(step); }
+
 /* --- users (local demo auth) --- */
 function getUsers(){ return JSON.parse(localStorage.getItem('rsf_users_v1')||'[]'); }
 function saveUsers(u){ localStorage.setItem('rsf_users_v1', JSON.stringify(u)); }
-function ensureDefaultUsers(){ const u = getUsers(); if(!u || u.length === 0) saveUsers([{username:'admin',password:'admin',role:'admin'},{username:'staff',password:'staff',role:'staff'},{username:'user',password:'user',role:'viewer'}]); }
-function registerUser(username,password,role){ if(!username||!password) return {ok:false,msg:'Missing fields'}; const users = getUsers(); if(users.find(x=>x.username.toLowerCase()===username.toLowerCase())) return {ok:false,msg:'Usuario ya existe'}; users.push({username,password,role}); saveUsers(users); return {ok:true,msg:'Usuario registrado'}; }
+function ensureDefaultUsers(){ const u = getUsers(); if(!u || u.length === 0) saveUsers([
+    {username:'DUEÑO',password:'DUEÑO123',role:'admin'},
+    {username:'EMPLEADO1',password:'EMPLEADO1',role:'staff'},
+    {username:'EMPLEADO2',password:'EMPLEADO2',role:'staff'},
+    {username:'user',password:'user',role:'viewer'}
+  ]); }
+function registerUser(username,password,role){ if(!username||!password) return {ok:false,msg:'Missing fields'}; const users = getUsers(); if(users.find(x=>x.username.toLowerCase()===username.toLowerCase())) return {ok:false,msg:'Usuario ya existe'}; // registration only creates viewers to prevent elevation
+  users.push({username,password,role: 'viewer'}); saveUsers(users); return {ok:true,msg:'Usuario registrado (rol: viewer)'}; }
+
+// Admin functions to manage users
+function promoteUser(username, role){ if(currentRole() !== 'admin') return {ok:false,msg:'Solo admin puede cambiar roles'}; const users = getUsers(); const u = users.find(x=>x.username.toLowerCase()===username.toLowerCase()); if(!u) return {ok:false,msg:'Usuario no encontrado'}; u.role = role; saveUsers(users); return {ok:true,msg:'Rol actualizado'}; }
+function deleteUser(username){ if(currentRole() !== 'admin') return {ok:false,msg:'Solo admin puede eliminar usuarios'}; let users = getUsers(); users = users.filter(x=>x.username.toLowerCase()!==username.toLowerCase()); saveUsers(users); return {ok:true,msg:'Usuario eliminado'}; }
+function createUserByAdmin(username,password,role){ if(currentRole() !== 'admin') return {ok:false,msg:'Solo admin puede crear usuarios con rol'}; const users = getUsers(); if(users.find(x=>x.username.toLowerCase()===username.toLowerCase())) return {ok:false,msg:'Usuario ya existe'}; users.push({username,password,role}); saveUsers(users); return {ok:true,msg:'Usuario creado'}; }
 function loginUser(username,password){ const users = getUsers(); const u = users.find(x=>x.username.toLowerCase()===username.toLowerCase() && x.password===password); if(!u) return {ok:false,msg:'Credenciales inválidas'}; sessionStorage.setItem('rsf_user', JSON.stringify({username:u.username,role:u.role})); sessionStorage.setItem('rsf_role', u.role); updateUserBadge(); applyPermissions(); return {ok:true,msg:'Login ok', user:u}; }
 
 function quickLogin(role){
-  // Demo quick login uses username == role and password == role
+  // Demo quick login uses the exact username for DUEÑO/EMPLEADO1 etc
   const resp = loginUser(role, role);
   if(resp.ok){ window.location.href = 'index.html'; }
   else alert(resp.msg);

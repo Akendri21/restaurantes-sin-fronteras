@@ -21,6 +21,7 @@
     <a href="reportes.html" data-i18n="nav_reports">Reportes</a>
     <a href="opiniones.html" data-i18n="nav_opinions">Opiniones</a>
     <a href="login.html" data-i18n="login">Login</a>
+    <a href="users.html" data-admin-only>Usuarios</a>
   </nav>
   <div class="controls">
     <select id="lang-select" onchange="setLang(this.value)"><option value="es">ES</option><option value="en">EN</option></select>
@@ -32,24 +33,37 @@
 <main class="container">
 <section class="card">
 <h2 data-i18n="nav_dashboard">Dashboard</h2>
-<div class="grid">
-  <div class="card"><h3>Total Restaurantes</h3><p id="total-restaurants">0</p></div>
-  <div class="card"><h3>Total Ventas</h3><p id="total-sales">0</p></div>
-  <div class="card"><h3>Opiniones</h3><p id="total-opinions">0</p></div>
+  <div class="grid">
+  <a class="card stat-card" href="restaurantes.html" title="Ver restaurantes">
+    <h3>Total Restaurantes</h3>
+    <p id="total-restaurants">0</p>
+  </a>
+  <a class="card stat-card" href="facturacion.html" title="Ver ventas">
+    <h3>Total Ventas</h3>
+    <p id="total-sales">0</p>
+  </a>
+  <a class="card stat-card" href="opiniones.html" title="Ver opiniones">
+    <h3>Opiniones</h3>
+    <p id="total-opinions">0</p>
+  </a>
 </div>
 <div class="card">
+  <h3>Últimos restaurantes</h3>
+  <ul id="recent-restaurants" class="small"></ul>
+</div>
+  <div class="card">
   <h3 data-i18n="chain_info">Información de la Cadena</h3>
-  <label data-i18n="name">Nombre:<h5>RESTAURANTE SIN FRONTERAS</h5>
-  <label data-i18n="desc">Descripción<h5>Restaurante Mundialmente Conocido Con 3 Estrellas MICHELIN</h5>
-  <button onclick="saveChain()">Guardar</button>
+  <label data-i18n="name">Nombre:<input id="chain-name" data-readonly-for-viewer/></label>
+  <label data-i18n="desc">Descripción:<input id="chain-desc" data-readonly-for-viewer/></label>
+  <button onclick="saveChain()" data-readonly-for-viewer>Guardar</button>
 </div>
 </section>
 </main>
 <footer class="footer">© <span id="year"></span> RESTAURANTES SIN FRONTERAS - RSF. <span data-i18n="rights">Todos los derechos reservados.</span></footer>
 <div id="login-modal" class="card hidden" style="position:fixed;right:20px;top:80px;max-width:260px;">
-  <h4>Login (simulado)</h4>
+  <h4>Login </h4>
   <p class="small">Selecciona un rol:</p>
-  <button onclick="quickLogin('admin')">Admin</button> <button onclick="quickLogin('staff')">Staff</button> <button onclick="quickLogin('user')">Usuario</button>
+  <button onclick="quickLogin('DUEÑO')">Admin (DUEÑO)</button> <button onclick="quickLogin('EMPLEADO1')">Staff (EMPLEADO1)</button> <button onclick="quickLogin('user')">Usuario (user)</button>
 </div>
 <script src="assets/app.js"></script>
 <script>
@@ -59,10 +73,16 @@ document.addEventListener('DOMContentLoaded', ()=>{
 });
 function updateDashboard(){
   const data = JSON.parse(localStorage.getItem('rsf_data_v2')||'{}');
-  document.getElementById('total-restaurants').textContent = (data.restaurants||[]).length;
-  document.getElementById('total-opinions').textContent = (data.opinions||[]).length;
+  const restaurantsCount = (data.restaurants||[]).length;
+  const opinionsCount = (data.opinions||[]).length;
   const sales = (data.invoices||[]).reduce((s,i)=>s+(i.total||0),0);
-  document.getElementById('total-sales').textContent = sales;
+  animateCounter('total-restaurants', restaurantsCount);
+  animateCounter('total-opinions', opinionsCount);
+  animateCounter('total-sales', sales);
+  // recent restaurants (last 3)
+  const recentList = document.getElementById('recent-restaurants');
+  recentList.innerHTML = '';
+  (data.restaurants||[]).slice(-3).reverse().forEach(r=>{ const li = document.createElement('li'); li.textContent = `${r.name} — ${r.city}`; recentList.appendChild(li); });
   document.getElementById('chain-name').value = (data.chain && data.chain.name) || '';
   document.getElementById('chain-desc').value = (data.chain && data.chain.desc) || '';
 }
