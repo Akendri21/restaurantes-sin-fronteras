@@ -19,4 +19,5 @@ Instrucciones:
 4. Para probar roles: botón "Login" -> seleccionar Admin/Staff/Viewer.
 5. Para imprimir factura: en la página de Facturación, generar factura y usar "Imprimir" en la lista (abre plantilla imprimible).
 
-Nota: Todos los datos se almacenan en el navegador (localStorage). Para resetear, elimina la clave "rsf_data_v2" en las herramientas del navegador o borra el almacenamiento local.
+Nota: dar creditos a DMZ.B.ala.4.2.0
+
